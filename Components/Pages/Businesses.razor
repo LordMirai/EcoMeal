@@ -1,0 +1,69 @@
+﻿@page "/businesses"
+@rendermode InteractiveServer
+
+@using EcoMeal.Models;
+@using Bogus
+
+<PageTitle>Businesses/Restaurants</PageTitle>
+
+<h1>Businesses</h1>
+<hr />
+
+<div class="container-sm">
+    <div class="input-group mb-3" role="group">
+        <button type="button" class="btn btn-primary me-1" @onclick="GenerateBusiness" title="(Clientside Only!)">Generate Business</button>
+        <input type="number" placeholder="Number of businesses to generate" @bind="numToGen" />
+    </div>
+
+    <table class="table table-bordered table-hover">
+        <thead>
+            <tr class="table-dark">
+                <td>#</td>
+                <td>Business Name</td>
+                <td>Accronym</td>
+            </tr>
+        </thead>
+        @if (businesses.Count == 0)
+        {
+            <tr>
+                <td>N/A</td>
+                <td>No businesses found</td>
+            </tr>
+        } else
+        {
+            @foreach (EcoMeal.Models.Business business in businesses)
+            {
+                <tr>
+                    <td>@business.Id</td>
+                    <td>@business.Name</td>
+                    <td>@(business.GetAccronym())</td>
+                </tr>
+            }
+        }
+        <tbody>
+
+        </tbody>
+    </table>
+</div>
+
+@code {
+    List<Business> businesses = new();
+
+    Faker faker = new Faker();
+
+    float numToGen = 1;
+
+    private void GenerateBusiness()
+    {
+        int numBusinesses = (int)numToGen;
+        for (int i = 0; i < numBusinesses; i++)
+        {
+            var business = new Business
+            {
+                Id = new Random().Next() % 100,
+                Name = faker.Company.CompanyName()
+            };
+            businesses.Add(business);
+        }
+    }
+}

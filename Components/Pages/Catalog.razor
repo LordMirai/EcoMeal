@@ -1,0 +1,10 @@
+﻿@page "/catalog/{BusinessId:int}"
+
+<PageTitle>Catalog - @BusinessName</PageTitle>
+<h3>Catalog - Business ID: @BusinessId</h3>
+
+@code {
+    [Parameter]
+    public int BusinessId { get; set; }
+    public string BusinessName { get; set; } = "Loading...";
+}
