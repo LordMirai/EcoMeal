@@ -21,5 +21,13 @@ public partial class Package
 
     public int? Quantity { get; set; }
 
+    public int? CategoryId { get; set; }
+
     public bool? IsDeleted { get; set; }
+
+    public virtual Business? Business { get; set; }
+
+    public virtual PackageCategory? Category { get; set; }
+
+    public virtual ICollection<OrderEntry> OrderEntries { get; set; } = new List<OrderEntry>();
 }

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-
 namespace EcoMeal.Models;
 
 public partial class Business
@@ -17,6 +16,8 @@ public partial class Business
 
     public int? OwnerId { get; set; }
 
+    public int? BusinessTypeId { get; set; }
+
     public string? Description { get; set; }
 
     public string? Address { get; set; }
@@ -24,13 +25,14 @@ public partial class Business
     public string? ImageUrl { get; set; }
 
     public bool IsDeleted { get; set; }
-}
 
+    public virtual BusinessType? BusinessType { get; set; }
 
-// custom helper code (praying that EFC doesn't kill it)
-public partial class Business
-{
+    public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 
+    public virtual ICollection<Package> Packages { get; set; } = new List<Package>();
+
+    // helper func. Need to find a better way to do it because EFC nukes it every fucking time.
     public string GetAccronym()
     {
         Name = Name.Trim();
