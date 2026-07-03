@@ -23,6 +23,7 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<PackageService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<BusinessService>();
+builder.Services.AddScoped<RoleService>();
 
 
 

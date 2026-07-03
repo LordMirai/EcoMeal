@@ -21,4 +21,11 @@ public class UserService: DBService
 
         return await query.ToListAsync();
     }
+
+    public bool IsAdmin(User user)
+    {
+        int roleID = user.RoleId;
+
+        return (roleID == 2); // make it explicit, ideally.
+    }
 }
