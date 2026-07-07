@@ -1,8 +1,15 @@
 ﻿@page "/businesses"
 @rendermode InteractiveServer
 
-@using EcoMeal.Models;
+@using EcoMeal.Entities;
+@using EcoMeal.Controllers;
+@using EcoMeal.Repositories;
+@using EcoMeal.Services;
 @using Bogus
+
+@inject BusinessRepository BusinessRepo
+@inject BusinessController businessController
+@inject UtilityService Util
 
 <PageTitle>Businesses/Restaurants</PageTitle>
 
@@ -10,60 +17,266 @@
 <hr />
 
 <div class="container-sm">
+
     <div class="input-group mb-3" role="group">
-        <button type="button" class="btn btn-primary me-1" @onclick="GenerateBusiness" title="(Clientside Only!)">Generate Business</button>
+        <button type="button" role="button" class="btn btn-primary me-1" @onclick="GenerateBusiness" title="(Clientside Only!)">Generate Business</button>
         <input type="number" placeholder="Number of businesses to generate" @bind="numToGen" />
+        <a type="button" class="btn btn-secondary ms-2" href="/businesses/create">Register new Business</a>
     </div>
 
-    <table class="table table-bordered table-hover">
-        <thead>
-            <tr class="table-dark">
-                <td>#</td>
-                <td>Business Name</td>
-                <td>Accronym</td>
-            </tr>
-        </thead>
-        @if (businesses.Count == 0)
+
+    <div class="d-flex flex-wrap gap-3 align-items-center mb-3">
+        <div class="flex-grow-1" style="max-width: 400px;">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Search by Name or GUID..."
+                   @bind="searchQuery"
+                   @bind:event="oninput" />
+        </div>
+
+        @if (columns != null)
         {
-            <tr>
-                <td>N/A</td>
-                <td>No businesses found</td>
-            </tr>
-        } else
-        {
-            @foreach (EcoMeal.Models.Business business in businesses)
+            <button type="button" class="btn btn-outline-secondary" @onclick="ToggleDropdown">
+                Display settings
+            </button>
+
+
+            @if (isDropdownOpen)
             {
-                <tr>
-                    <td>@business.Id</td>
-                    <td>@business.Name</td>
-                    <td>@(business.GetAccronym())</td>
-                </tr>
+                <div class="position-fixed top-0 start-0 w-100 h-100"
+                        style="z-index: 1040; background: transparent; cursor: default;"
+                        @onclick="CloseDropdown">
+                </div>
+
+
+                <div class="position-absolute border rounded p-3 bg-dark text-white mt-1 shadow" style="z-index: 1050; min-width: 200px;">
+                    @foreach (string key in columns.Keys.ToList())
+                    {
+                        var uniqueId = $"col-{key}";
+                        <div class="form-check mb-2">
+                            <fieldset disabled="@(key.Equals("Name"))">
+                                <input type="checkbox"
+                                        id="@uniqueId"
+                                        class="form-check-input"
+                                        @bind="columns[key]"/>
+                                <label for="@uniqueId" class="form-check-label">Show @key</label>
+                            </fieldset>
+                        </div>
+                    }
+                </div>
             }
         }
-        <tbody>
+    </div>
 
-        </tbody>
-    </table>
+    @if (businesses == null)
+    {
+        <p>L o a d i n g . . .</p>
+    }
+    else
+    {
+        <table class="table table-bordered table-hover table-striped">
+            <thead>
+                <tr class="table-dark">
+                    @foreach (var key in columns.Keys)
+                    {
+                        if (columns[key])
+                        {
+                            <th>
+                                @switch (key)
+                                {
+                                    case "Id":
+                                        <text>GUID</text>
+                                        ; break;
+                                    case "Name":
+                                        <text>Business Name</text>
+                                        ; break;
+                                    case "Type":
+                                        <text>Business Type</text>
+                                        ; break;
+                                    default:
+                                        <text>@key</text>
+                                        ; break;
+                                }
+                            </th>
+                        }
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @if (businesses.Count == 0 || FilteredBusinesses.Count == 0)
+                {
+                    <tr>
+                        @foreach (var key in columns.Keys)
+                        {
+                            if (columns[key])
+                            {
+                                <td>@(key == "Name" ? "No businesses found" : "N/A")</td>
+                            }
+                        }
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var business in FilteredBusinesses)
+                    {
+                        var currentId = business.Id;
+                        bool isExpanded = expandedBusinessId == currentId;
+
+                        <tr>
+                            @if (columns["Id"])
+                            {
+                                <td class="clickable" @onclick="() => Copy(business.Id)">@business.Id</td>
+                            }
+                            @if (columns["Name"])
+                            {
+                                <td class="clickable" @onclick="() => Copy(business.Name)">@business.Name</td>
+                            }
+                            @if (columns["Action"])
+                            {
+                                <td>
+                                    <a class="btn btn-outline-primary" role="button" href="/catalog/@currentId">
+                                        View Catalog
+                                    </a>
+                                </td>
+                            }
+                            @if (columns["Accronym"])
+                            {
+                                <td class="clickable" @onclick="() => Copy(businessController.GetAccronym(business))">@businessController.GetAccronym(business)</td>
+                            }
+                            @if (columns["Description"])
+                            {
+                                <td class="clickable" @onclick="() => Copy(business.Description)">@business.Description</td>
+                            }
+                            @if (columns["Address"])
+                            {
+                                <td class="clickable" @onclick="() => Copy(business.Address)">@business.Address</td>
+                            }
+                            @if (columns["Type"])
+                            {
+                                <td class="clickable" @onclick="() => Copy(business.BusinessType.Name)">@business.BusinessType.Name</td>
+                            }
+                            @if (columns["Image"])
+                            {
+                                <td>
+                                    <img src="@business.ImageURL"
+                                    class="img-thumbnail business-preview @(isExpanded ? "expanded" : "cropped")"
+                                    alt="photo"
+                                    @onclick="() => ToggleImage(currentId)">
+                                </td>
+                            }
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    }
 </div>
 
 @code {
-    List<Business> businesses = new();
+    List<Business>? businesses;
 
     Faker faker = new Faker();
 
-    float numToGen = 1;
+    private float numToGen = 1;
+    private Guid expandedBusinessId = Guid.Empty;
+    private bool isDropdownOpen = false;
+    private string searchQuery = string.Empty;
 
-    private void GenerateBusiness()
+    private async Task GenerateBusiness()
     {
         int numBusinesses = (int)numToGen;
+
+        BusinessType btype = new()
+        {
+            Id = Guid.NewGuid(),
+            Name = "Company"
+        };
         for (int i = 0; i < numBusinesses; i++)
         {
             var business = new Business
             {
-                Id = new Random().Next() % 100,
-                Name = faker.Company.CompanyName()
+                Id = Guid.NewGuid(),
+                Name = faker.Company.CompanyName(),
+                Description = faker.Company.CatchPhrase(),
+                Address = faker.Address.FullAddress(),
+                ImageURL = faker.Image.PicsumUrl(640, 480, true),
+                BusinessType = btype
             };
-            businesses.Add(business);
+            await BusinessRepo.AddAsync(business);
+        }
+        await BusinessRepo.SaveChangesAsync();
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        base.OnInitialized();
+
+        await Refresh();
+    }
+
+    private async Task Refresh()
+    {
+        businesses = (await businessController.GetAll()).Value;
+    }
+
+
+    private void Copy(object? content)
+    {
+        if (content != null)
+        {
+            Util.CopyToClipboard(content.ToString() ?? string.Empty);
+        }
+    }
+
+    private void ToggleImage(Guid id)
+    {
+        if (expandedBusinessId == id)
+        {
+            expandedBusinessId = Guid.Empty; // Collapse if clicked again
+        }
+        else
+        {
+            expandedBusinessId = id; // Expand
+        }
+    }
+
+
+    // display settings
+    private Dictionary<string, bool> columns = new()
+    {
+        { "Id", false },
+        { "Name", true },
+        { "Action", true},
+        { "Accronym", true },
+        { "Description", true },
+        { "Address", false },
+        { "Type", false },
+        { "Image", true }
+    };
+
+    private void ToggleDropdown()
+    {
+        isDropdownOpen = !isDropdownOpen;
+    }
+
+    private void CloseDropdown()
+    {
+        isDropdownOpen = false;
+    }
+
+
+    private List<Business> FilteredBusinesses
+    {
+        get
+        {
+            if (businesses == null) return new List<Business>();
+            if (string.IsNullOrWhiteSpace(searchQuery)) return businesses;
+
+            return businesses
+                .Where(b => (b.Name != null && b.Name.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)) ||
+                            b.Id.ToString().Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+                .ToList();
         }
     }
 }

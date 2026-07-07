@@ -1,0 +1,218 @@
+﻿@page "/db"
+@rendermode InteractiveServer
+
+@using EcoMeal.Entities;
+@using EcoMeal.Repositories;
+@using EcoMeal.Services;
+
+@inject OrderStatusRepository OrderRepo
+@inject BusinessRepository BusinessRepo
+@inject BusinessTypeRepository BusinessTypeRepo
+@inject PackageRepository PackageRepo
+@inject PackageTypeRepository PackageTypeRepo
+@inject BusinessTypeService BusinessTypeService
+
+@inject UtilityService Util
+
+
+<PageTitle>DB Test</PageTitle>
+
+<h2>DBTest</h2>
+<hr />
+
+<div class="container">
+    <h4>Order Statuses - @(dataReady ? orderStatuses.Count : "???")</h4>
+
+    <div class="btn-group-sm mt-2">
+        <button role="button" class="btn btn-primary me-2" @onclick="EnsureInitialStatuses">Ensure Initial Statuses</button>
+        <button role="button" class="btn btn-danger me-2" @onclick="DeleteOrderStatuses">Delete Order Statuses</button>
+    </div>
+
+    <table class="table table-bordered table-hover mt-1" id="OSTable">
+        <thead>
+            <tr class="fw-bold text-center table-dark">
+                <th>ID</th>
+                <th>Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!dataReady)
+            {
+                <tr class="table-danger">
+                    <td>N/A</td>
+                    <td>Waiting for data...</td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var status in orderStatuses)
+                {
+                    <tr>
+                        <td>@status.Id</td>
+                        <td>@status.Name</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<hr />
+
+<div class="container mt-3">
+    <h4>Business Types</h4>
+
+    <div class="input-group mt-2 mb-2">
+        <input type="text" class="form-control me-2" placeholder="New Package Type Name" @bind="newBusinessTypeName" />
+        <button type="button" class="btn btn-primary me-2" @onclick="AddBusinessType">Add</button>
+        <button type="button" class="btn btn-danger" @onclick="DeleteBusinessType">Delete</button>
+    </div>
+
+    <table class="table table-bordered table-hover mt-1 mb-3">
+        <thead>
+            <tr class="table-dark">
+                <th>ID</th>
+                <th>Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var type in businessTypes)
+            {
+                <tr>
+                    <td>@type.Id</td>
+                    <td>@type.Name</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<hr />
+
+<div class="container mt-3">
+    <h4>Package Types</h4>
+
+    <div class="input-group mb-3" role="group">
+        <input type="text" class="form-control me-2" placeholder="New Package Type Name" @bind="newPkgTypeName" />
+        <button type="button" class="btn btn-primary me-2" @onclick="AddPackageType">Add</button>
+        <button type="button" class="btn btn-danger" @onclick="DeletePackageType">Delete</button>
+    </div>
+    
+    <table class="table table-bordered table-hover mt-1 mb-3">
+        <thead>
+            <tr class="table-dark">
+                <th>ID</th>
+                <th>Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!dataReady)
+            {
+                <tr class="table-danger">
+                    <td>N/A</td>
+                    <td>Waiting for data...</td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var package in packageTypes)
+                {
+                    <tr>
+                        <td @onclick="() => Copy(package.Id)">@package.Id</td>
+                        <td>@package.Name</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<hr />
+
+
+@code {
+    bool dataReady = false;
+
+    private List<OrderStatus> orderStatuses = new();
+    private List<BusinessType> businessTypes = new();
+    private List<PackageType> packageTypes = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshOrderStatuses();
+        businessTypes = await BusinessTypeRepo.GetAllAsync();
+        packageTypes = await PackageTypeRepo.GetAllAsync();
+        dataReady = true;
+    }
+
+
+    private async Task EnsureInitialStatuses()
+    {
+        await OrderRepo.EnsureInitialOrderStatuses();
+        await RefreshOrderStatuses();
+    }
+
+    private async Task DeleteOrderStatuses()
+    {
+        await OrderRepo.DeleteAllStatusesAsync();
+        await RefreshOrderStatuses();
+    }
+
+    private async Task RefreshOrderStatuses()
+    {
+        orderStatuses = await OrderRepo.GetStatusesAsync();
+    }
+}
+
+
+
+@* for packages and types *@
+@code {
+    private string newPkgTypeName = string.Empty;
+
+    private async Task AddPackageType()
+    {
+        if (!string.IsNullOrWhiteSpace(newPkgTypeName))
+        {
+            await PackageTypeRepo.Create(newPkgTypeName);
+            packageTypes = await PackageTypeRepo.GetAllAsync();
+            newPkgTypeName = string.Empty;
+        }
+    }
+
+    private async Task DeletePackageType()
+    {
+        var id = Guid.Parse(newPkgTypeName);
+        await PackageTypeRepo.DeleteAsync(id);
+        await PackageTypeRepo.SaveChangesAsync();
+        packageTypes = await PackageTypeRepo.GetAllAsync();
+    }
+
+    private void Copy(object? content)
+    {
+        if (content != null)
+        {
+            Util.CopyToClipboard(content.ToString() ?? string.Empty);
+        }
+    }
+
+    private string newBusinessTypeName = string.Empty;
+
+    private async Task AddBusinessType()
+    {
+        if (!string.IsNullOrWhiteSpace(newBusinessTypeName))
+        {
+            await BusinessTypeService.Create(newBusinessTypeName);
+            businessTypes = await BusinessTypeRepo.GetAllAsync();
+            newBusinessTypeName = string.Empty;
+        }
+    }
+
+    private async Task DeleteBusinessType()
+    {
+        var id = Guid.Parse(newBusinessTypeName);
+        await BusinessTypeRepo.DeleteAsync(id);
+        await BusinessTypeRepo.SaveChangesAsync();
+        businessTypes = await BusinessTypeRepo.GetAllAsync();
+    }
+}

@@ -1,0 +1,117 @@
+﻿@page "/businesses/create"
+@rendermode InteractiveServer
+
+@using EcoMeal.Entities;
+@using EcoMeal.Controllers;
+@using EcoMeal.Repositories;
+
+@inject BusinessController BusinessController;
+@inject BusinessRepository BusinessRepo;
+
+@inject NavigationManager NavigationManager;
+
+<PageTitle>Register a Business</PageTitle>
+
+<h2>Register a new Business</h2>
+<hr />
+
+@if (businessTypes == null)
+{
+    <p>L o a d i n g . . .</p>
+}
+else
+{
+    <EditForm Model="@model" FormName="CreateBusinessForm" OnValidSubmit="Submit">
+        <div class="container mb-3">
+            <label for="name" class="form-label">Name</label>
+            <InputText id="name" class="form-control" @bind-Value="model.Name" />
+            <InputText id="description" class="form-control mt-2" @bind-Value="model.Description" placeholder="Description (optional)" />
+            <InputText id="address" class="form-control mt-2" @bind-Value="model.Address" placeholder="Address (optional)" />
+            @* <InputText id="imageURL" class="form-control mt-2" @bind-Value="model.ImageURL" placeholder="Image URL (optional)" /> *@
+
+            @* Preview image thing *@
+            <div class="d-flex gap-2 mt-2">
+                <InputText id="imageURL" class="form-control" @bind-Value="model.ImageURL" placeholder="Image URL (optional)" />
+                <button type="button" class="btn btn-secondary" @onclick="UpdatePreview">Preview</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(previewUrl))
+            {
+                <div class="mt-2 p-2 border rounded bg-light text-center" style="max-width: 300px;">
+                    <p class="small text-muted mb-1">Image Preview</p>
+                    <img src="@previewUrl" alt="Preview" class="img-fluid rounded" @onerror="HandleImageError" />
+                    @if (imageLoadFailed)
+                    {
+                        <div class="text-danger small mt-1">Failed to load image. Check the URL.</div>
+                    }
+                </div>
+            }
+
+            <InputSelect id="businessType" class="form-select mt-2" @bind-Value="model.BusinessTypeId">
+                @foreach (BusinessType type in businessTypes)
+                {
+                    <option value="@type.Id">@type.Name</option>
+                }
+            </InputSelect>
+
+            <button type="button" role="button" class="btn btn-primary mt-2" @onclick="Submit">Submit</button>
+        </div>
+    </EditForm>
+}
+
+@code {
+
+    private BusinessFormModel model = new();
+    private List<BusinessType> businessTypes;
+    private string? previewUrl;
+    private bool imageLoadFailed = false;
+
+    private class BusinessFormModel
+    {
+        public string Name { get; set; }
+        public string? Description { get; set; }
+        public string? Address { get; set; }
+        public string? ImageURL { get; set; }
+        public string BusinessTypeId { get; set; }
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        businessTypes = await BusinessRepo.GetTypesAsync();
+        businessTypes.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async Task Submit()
+    {
+        var result = await BusinessController.GetTypeAsync(model.BusinessTypeId);
+        BusinessType? btype = result.Value;
+        var business = new Business
+        {
+            Name = model.Name,
+            Description = model.Description,
+            Address = model.Address,
+            ImageURL = model.ImageURL,
+            BusinessType = btype
+        };
+
+        await BusinessController.AddAsync(business);
+
+        NavigationManager.NavigateTo("/businesses");
+    }
+
+    private void UpdatePreview()
+    {
+        imageLoadFailed = false;
+        // Binds the current state of model.ImageURL to the preview source
+        previewUrl = model.ImageURL;
+    }
+
+    private void HandleImageError()
+    {
+        imageLoadFailed = true;
+    }
+
+}

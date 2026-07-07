@@ -13,10 +13,15 @@ public class UtilityService
 
     public async Task CopyToClipboardAsync(string text)
     {
+        CopyToClipboard(text);
+    }
+
+    public void CopyToClipboard(string text)
+    {
         if (string.IsNullOrEmpty(text)) return;
         try
         {
-            await _jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+            _jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
         }
         catch (InvalidOperationException)
         {

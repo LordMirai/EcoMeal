@@ -1,0 +1,24 @@
+﻿body {
+}
+.business-preview {
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+}
+
+.business-preview.cropped {
+    width: 128px;
+    height: 128px;
+    object-fit: cover;
+    object-position: center;
+}
+
+.business-preview.expanded {
+    width: 100%;
+    height: auto;
+    max-width: none; /* Overrides Bootstrap restrictions if necessary */
+    object-fit: contain;
+}
+
+.clickable {
+    cursor: pointer;
+}

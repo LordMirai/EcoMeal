@@ -1,48 +1,31 @@
-﻿using Bogus.DataSets;
-using EcoMeal.Data;
-using EcoMeal.Models;
+﻿using EcoMeal.Entities;
+using EcoMeal.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 
 namespace EcoMeal.Services;
 
-public class BusinessService: DBService
+public class BusinessService(IBusinessRepository businessRepository) : IBusinessService
 {
-    public BusinessService(IDbContextFactory<AppDbContext> dbContextFactory) : base(dbContextFactory) { }
-
-    public async Task<Business> GetBusinessById(int id, bool includeDeleted=false)
+    public async Task<List<Business>> GetAll()
     {
-        using var context = await _dbContextFactory.CreateDbContextAsync();
-
-        IQueryable<Business> query = context.Businesses;
-        if (!includeDeleted)
-        {
-            query = query.Where(u => !u.IsDeleted);
-        }
-        query = query.Where(u => u.Id == id);
-
-        return await query.FirstAsync();
+        return await businessRepository.GetAllAsync();
     }
 
-    public string GetAccronym(Business business)
+    public async Task AddAsync(Business business)
     {
-        string Name = business.Name;
-        Name = Name.Trim();
-        if (string.IsNullOrEmpty(Name)) return "[?]";
+        await businessRepository.AddAsync(business);
+        await businessRepository.SaveChangesAsync();
+    }
 
-        string cleanName = Name.ToUpper();
+    public async Task DeleteAsync(Business business)
+    {
+        await businessRepository.DeleteAsync(business.Id);
+        await businessRepository.SaveChangesAsync();
+    }
 
-        string[] noiseWords = { "AND", "INC", "CO", "LLC", "CORP" };
-        foreach (string noise in noiseWords)
-        {
-            cleanName = Regex.Replace(cleanName, $@"\b{noise}\b", "", RegexOptions.IgnoreCase);
-        }
-        cleanName = Regex.Replace(cleanName, @"[^A-Z\s]", "");
-
-        var accroChars = cleanName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .Select(word => word[0])
-            .Take(4);
-
-        return string.Concat(accroChars);
+    public async Task<Business?> GetById(Guid id)
+    {
+        return await businessRepository.GetByIdAsync(id);
     }
 }

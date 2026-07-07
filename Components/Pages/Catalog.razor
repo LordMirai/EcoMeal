@@ -1,10 +1,73 @@
-﻿@page "/catalog/{BusinessId:int}"
+﻿@page "/catalog/{id}"
 
-<PageTitle>Catalog - @BusinessName</PageTitle>
-<h3>Catalog - Business ID: @BusinessId</h3>
+@using EcoMeal.Entities;
+@using EcoMeal.Controllers;
+
+@using Microsoft.AspNetCore.Mvc;
+
+@inject BusinessController businessController
+@inject PackageController packageController
+
+<PageTitle>Catalog @(error ? "- Error" : "")</PageTitle>
+
+<h3>@headName</h3>
+<hr />
+
+@if (error)
+{
+    <div class="alert alert-danger">
+        <span class="fw-bold">Error: </span>
+        Business with ID "@id" <span class="fw-bold">not found</span>.
+        Try again from the <a href="/businesses">main page</a>.
+    </div>
+    return;
+}
+
+<div class="container-sm">
+    <div class="fw-semibold">
+        Business "@currentBusiness?.Name" has @(packages?.Count ?? 0) packages available.
+    </div>
+</div>
+
+
 
 @code {
     [Parameter]
-    public int BusinessId { get; set; }
-    public string BusinessName { get; set; } = "Loading...";
+    public string id { get; set; }
+    Guid BusinessID;
+
+    private Business? currentBusiness;
+
+    bool error = false;
+    string headName => error ? "Catalog - Error" : $"Catalog for {currentBusiness?.Name}";
+
+    private List<Package> packages = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            BusinessID = Guid.Parse(id);
+        }
+        catch (FormatException)
+        {
+            error = true;
+            return;
+        }
+
+        Console.WriteLine($"Catalog ID: {BusinessID}");
+
+        ActionResult<Business?> result = await businessController.GetById(BusinessID);
+        if (result.Result is NotFoundResult)
+        {
+            error = true;
+            return;
+        }
+
+
+        currentBusiness = result.Value;
+        
+        ActionResult<List<Package>> packageResult = await packageController.GetByBusinessIdAsync(BusinessID);
+        packages = packageResult.Value;
+    }
 }

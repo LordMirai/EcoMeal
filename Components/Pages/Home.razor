@@ -11,7 +11,6 @@ Welcome to your new app.
 @code {
     protected override void OnInitialized()
     {
-        // we don't really care too much about some generic homepage, the Business page is what's important.
-        NavigationManager.NavigateTo("/businesses", replace: true);
+        NavigationManager.NavigateTo("/businesses");
     }
 }
