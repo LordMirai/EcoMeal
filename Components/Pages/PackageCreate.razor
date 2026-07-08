@@ -1,0 +1,47 @@
+﻿@page "/create-package/{id}"
+@rendermode InteractiveServer
+
+
+@using EcoMeal.Entities
+@using EcoMeal.Controllers
+@using EcoMeal.Services
+@using Microsoft.AspNetCore.Mvc
+
+@inject NavigationManager NavigationManager
+@inject BusinessController businessController
+@inject UtilityService Util
+
+<h3>Create Package Listing</h3>
+
+@code {
+    [Parameter]
+    public string id { get; set; }
+    public Guid businessId { get; set; }
+    public Business? currentBusiness { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            businessId = Guid.Parse(id);
+        }
+        catch(FormatException)
+        {
+            Console.WriteLine("Obviously, bad ID");
+            Util.SetMessage("Bad ID", "danger");
+            NavigationManager.NavigateTo("/businesses");
+            return;
+        }
+
+        var result = await businessController.GetById(businessId);
+        if (result.Result is NotFoundResult)
+        {
+            Console.WriteLine("Business not found");
+            Util.SetMessage("Business not found", "danger");
+            NavigationManager.NavigateTo("/businesses");
+            return;
+        }
+
+        currentBusiness = result.Value;
+    }
+}

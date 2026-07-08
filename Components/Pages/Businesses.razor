@@ -15,6 +15,19 @@
 
 <h1>Businesses</h1>
 <hr />
+Hello this is where we are. Alert? @(Util.HasAlert ? "yes" : "no") - Type: @Util.AlertType - Message: "@(Util.AlertMessage ?? "[none]")"
+
+@if (Util.HasAlert)
+{
+    <div class="alert alert-@(Util.AlertType) alert-dismissible fade show" role="alert">
+        @Util.AlertMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    @if (Util.AlertSingleUse)
+    {
+        Util.ClearMessage();
+    }
+}
 
 <div class="container-sm">
 

@@ -17,7 +17,8 @@
 
 <PageTitle>DB Test</PageTitle>
 
-<h2>DBTest</h2>
+<h2>Database Test</h2>
+<h5 class="fst-italic text-secondary">Make sure things work the way you expect them. Basic C/R/D things available hopefully.</h5>
 <hr />
 
 <div class="container">
@@ -141,7 +142,11 @@
     {
         await RefreshOrderStatuses();
         businessTypes = await BusinessTypeRepo.GetAllAsync();
+        businessTypes.Sort((a, b) => a.Name.CompareTo(b.Name, StringComparison.OrdinalIgnoreCase));
+        
         packageTypes = await PackageTypeRepo.GetAllAsync();
+        packageTypes.Sort((a, b) => a.Name.CompareTo(b.Name, StringComparison.OrdinalIgnoreCase));
+
         dataReady = true;
     }
 

@@ -25,8 +25,12 @@
 
 <div class="container-sm">
     <div class="fw-semibold">
-        Business "@currentBusiness?.Name" has @(packages?.Count ?? 0) packages available.
+        Business "@currentBusiness?.Name" has @(packages?.Count ?? 0)<i class="bi bi-box-seam-fill"></i> packages available.
     </div>
+
+    <a class="btn btn-primary" role="button" href="/create-package/@BusinessID">
+    Create New Package Listing <i class="bi bi-box-seam-fill"></i>
+    </a>
 </div>
 
 
@@ -41,7 +45,7 @@
     bool error = false;
     string headName => error ? "Catalog - Error" : $"Catalog for {currentBusiness?.Name}";
 
-    private List<Package> packages = new();
+    private List<Package>? packages = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -66,8 +70,10 @@
 
 
         currentBusiness = result.Value;
-        
+
         ActionResult<List<Package>> packageResult = await packageController.GetByBusinessIdAsync(BusinessID);
         packages = packageResult.Value;
+
+        Console.WriteLine("Ok things loaded fine.");
     }
 }

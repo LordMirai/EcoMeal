@@ -55,6 +55,14 @@ public class BusinessController(IBusinessService businessService, IBusinessTypeS
 
     public async Task<ActionResult<BusinessType?>> GetTypeAsync(string type)
     {
-        return await businessTypeService.GetByNameAsync(type);
+        try
+        {
+            Guid id = Guid.Parse(type);
+            return await businessTypeService.GetByIdAsync(id);
+        }
+        catch (FormatException)
+        {
+            return BadRequest();
+        }
     }
 }

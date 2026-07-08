@@ -4,9 +4,11 @@
 @using EcoMeal.Entities;
 @using EcoMeal.Controllers;
 @using EcoMeal.Repositories;
+@using EcoMeal.Services;
 
 @inject BusinessController BusinessController;
 @inject BusinessRepository BusinessRepo;
+@inject UtilityService Util;
 
 @inject NavigationManager NavigationManager;
 
@@ -27,7 +29,6 @@ else
             <InputText id="name" class="form-control" @bind-Value="model.Name" />
             <InputText id="description" class="form-control mt-2" @bind-Value="model.Description" placeholder="Description (optional)" />
             <InputText id="address" class="form-control mt-2" @bind-Value="model.Address" placeholder="Address (optional)" />
-            @* <InputText id="imageURL" class="form-control mt-2" @bind-Value="model.ImageURL" placeholder="Image URL (optional)" /> *@
 
             @* Preview image thing *@
             <div class="d-flex gap-2 mt-2">
@@ -98,6 +99,8 @@ else
         };
 
         await BusinessController.AddAsync(business);
+
+        Util.SetMessage("Business created successfully!");
 
         NavigationManager.NavigateTo("/businesses");
     }
