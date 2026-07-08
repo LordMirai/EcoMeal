@@ -6,18 +6,22 @@
 @using EcoMeal.Repositories;
 @using EcoMeal.Services;
 @using Bogus
+@using Microsoft.AspNetCore.Mvc;
+
 
 @inject BusinessRepository BusinessRepo
 @inject BusinessController businessController
 @inject UtilityService Util
 
+@inject NavigationManager NavigationManager
+
 <PageTitle>Businesses/Restaurants</PageTitle>
 
 <h1>Businesses</h1>
 <hr />
-Hello this is where we are. Alert? @(Util.HasAlert ? "yes" : "no") - Type: @Util.AlertType - Message: "@(Util.AlertMessage ?? "[none]")"
+@* Hello this is where we are. Alert? @(Util.HasAlert() ? "yes" : "no") - Type: @Util.AlertType - Message: "@(Util.AlertMessage ?? "[none]")" *@
 
-@if (Util.HasAlert)
+@if (Util.HasAlert())
 {
     <div class="alert alert-@(Util.AlertType) alert-dismissible fade show" role="alert">
         @Util.AlertMessage
@@ -57,8 +61,8 @@ Hello this is where we are. Alert? @(Util.HasAlert ? "yes" : "no") - Type: @Util
             @if (isDropdownOpen)
             {
                 <div class="position-fixed top-0 start-0 w-100 h-100"
-                        style="z-index: 1040; background: transparent; cursor: default;"
-                        @onclick="CloseDropdown">
+                     style="z-index: 1040; background: transparent; cursor: default;"
+                     @onclick="CloseDropdown">
                 </div>
 
 
@@ -69,15 +73,20 @@ Hello this is where we are. Alert? @(Util.HasAlert ? "yes" : "no") - Type: @Util
                         <div class="form-check mb-2">
                             <fieldset disabled="@(key.Equals("Name"))">
                                 <input type="checkbox"
-                                        id="@uniqueId"
-                                        class="form-check-input"
-                                        @bind="columns[key]"/>
+                                       id="@uniqueId"
+                                       class="form-check-input"
+                                       @bind="columns[key]" />
                                 <label for="@uniqueId" class="form-check-label">Show @key</label>
                             </fieldset>
                         </div>
                     }
                 </div>
             }
+            <div class="flex-grow-1">
+                <label for="includeDel" class="form-label ms-3 me-1">Include Deleted?</label>
+                <input type="checkbox" class="form-check-input" checked="@includeDeleted" @oninput="Refresh" /> 
+                @* TODO: Fix this bs, includeDel doesn't work as expected. *@
+            </div>
         }
     </div>
 
@@ -147,9 +156,23 @@ Hello this is where we are. Alert? @(Util.HasAlert ? "yes" : "no") - Type: @Util
                             @if (columns["Action"])
                             {
                                 <td>
-                                    <a class="btn btn-outline-primary" role="button" href="/catalog/@currentId">
+                                    <a class="btn btn-outline-primary me-2" role="button" href="/catalog/@currentId">
                                         View Catalog
                                     </a>
+                                    <a class="btn btn-outline-secondary me-2" role="button" href="/businesses/edit/@business.Id.ToString()">
+                                        Edit
+                                    </a>
+                                    @if (!business.IsDeleted)
+                                    {
+                                        <btn class="btn btn-danger" role="button" @onclick="() => Delete(business.Id)">
+                                            Delete
+                                        </btn>
+                                    }else
+                                    {
+                                        <btn class="btn btn-info" role="button" @onclick="() => Restore(business.Id)">
+                                            Restore
+                                        </btn>
+                                    }
                                 </td>
                             }
                             @if (columns["Accronym"])
@@ -172,9 +195,9 @@ Hello this is where we are. Alert? @(Util.HasAlert ? "yes" : "no") - Type: @Util
                             {
                                 <td>
                                     <img src="@business.ImageURL"
-                                    class="img-thumbnail business-preview @(isExpanded ? "expanded" : "cropped")"
-                                    alt="photo"
-                                    @onclick="() => ToggleImage(currentId)">
+                                         class="img-thumbnail business-preview @(isExpanded ? "expanded" : "cropped")"
+                                         alt="photo"
+                                         @onclick="() => ToggleImage(currentId)">
                                 </td>
                             }
                         </tr>
@@ -194,6 +217,8 @@ Hello this is where we are. Alert? @(Util.HasAlert ? "yes" : "no") - Type: @Util
     private Guid expandedBusinessId = Guid.Empty;
     private bool isDropdownOpen = false;
     private string searchQuery = string.Empty;
+
+    private bool includeDeleted = true;
 
     private async Task GenerateBusiness()
     {
@@ -230,7 +255,7 @@ Hello this is where we are. Alert? @(Util.HasAlert ? "yes" : "no") - Type: @Util
 
     private async Task Refresh()
     {
-        businesses = (await businessController.GetAll()).Value;
+        businesses = (await businessController.GetAll(includeDeleted)).Value;
     }
 
 
@@ -291,5 +316,17 @@ Hello this is where we are. Alert? @(Util.HasAlert ? "yes" : "no") - Type: @Util
                             b.Id.ToString().Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
+    }
+
+    private async Task Delete(Guid id)
+    {
+        await businessController.Delete(id);
+        await Refresh();
+    }
+
+    private async Task Restore(Guid id)
+    {
+        await businessController.Restore(id);
+        await Refresh();
     }
 }

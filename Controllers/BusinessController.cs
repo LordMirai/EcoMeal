@@ -9,9 +9,9 @@ namespace EcoMeal.Controllers;
 [Route("business")]
 public class BusinessController(IBusinessService businessService, IBusinessTypeService businessTypeService) : ControllerBase
 {
-    public async Task<ActionResult<List<Business>>> GetAll()
+    public async Task<ActionResult<List<Business>>> GetAll(bool includeDeleted=false)
     {
-        return await businessService.GetAll();
+        return await businessService.GetAll(includeDeleted);
     }
 
     public async Task<ActionResult<Business?>> GetById(Guid id)
@@ -64,5 +64,39 @@ public class BusinessController(IBusinessService businessService, IBusinessTypeS
         {
             return BadRequest();
         }
+    }
+
+    public async Task<ActionResult> UpdateAsync(Business business)
+    {
+        var existingBusiness = await businessService.GetById(business.Id);
+        if (existingBusiness == null)
+        {
+            return NotFound();
+        }
+        await businessService.UpdateAsync(business);
+        return NoContent();
+    }
+
+    public async Task<ActionResult> Delete(Guid id)
+    {
+        var existingBusiness = await businessService.GetById(id);
+        if (existingBusiness == null)
+        {
+            return NotFound();
+        }
+        await businessService.DeleteAsync(existingBusiness);
+        return Ok();
+    }
+
+    public async Task<ActionResult> Restore(Guid id)
+    {
+        var existingBusiness = await businessService.GetById(id);
+        if (existingBusiness == null)
+        {
+            return NotFound();
+        }
+
+        await businessService.RestoreAsync(existingBusiness);
+        return Ok();
     }
 }

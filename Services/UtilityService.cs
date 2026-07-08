@@ -1,4 +1,5 @@
-﻿using Microsoft.JSInterop;
+﻿using Microsoft.IdentityModel.Tokens;
+using Microsoft.JSInterop;
 
 namespace EcoMeal.Services;
 
@@ -8,7 +9,7 @@ public class UtilityService
 
     public string? AlertMessage { get; private set; }
     public string AlertType { get; private set; } = "success";
-    public bool HasAlert => !string.IsNullOrEmpty(AlertMessage);
+    //public bool HasAlert => !string.IsNullOrEmpty(AlertMessage);
     public bool AlertSingleUse = false;
 
     public UtilityService(IJSRuntime jsRuntime)
@@ -45,5 +46,11 @@ public class UtilityService
     {
         AlertMessage = null;
         AlertType = "success";
+    }
+
+
+    public bool HasAlert()
+    {
+        return !AlertMessage.IsNullOrEmpty();
     }
 }

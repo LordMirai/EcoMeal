@@ -5,15 +5,53 @@
 @using EcoMeal.Entities
 @using EcoMeal.Controllers
 @using EcoMeal.Services
+@using EcoMeal.Repositories
 @using Microsoft.AspNetCore.Mvc
 
 @inject NavigationManager NavigationManager
 @inject BusinessController businessController
 @inject UtilityService Util
+@inject PackageController packageController
+@inject PackageTypeRepository pkgTypeRepo
 
-<h3>Create Package Listing</h3>
+<h2>Create Package Listing</h2>
+<hr />
 
-@code {
+<div class="container-sm mt-2">
+    <EditForm Model="@model" FormName="CreatePackageForm" OnValidSubmit="Submit">
+        <label for="Name" class="form-label">Package Name</label>
+        <InputText id="Name" class="form-control" @bind-Value="model.Name" placeholder="Example: Power Drill Set"/>
+        
+        <label for="Description" class="form-label">Description</label>
+        <InputText id="Description" class="form-control" @bind-Value="model.Description" placeholder="Example: A set containing five power tools."/>
+
+        <div class="input-group">
+            <label for="Price" class="form-label me-2">Price</label>
+            <InputNumber id="Price" class="form-control" @bind-Value="model.Price" placeholder="Example: 49.99" />
+
+            <label for="Quantity" class="form-label ms-2 me-2">Quantity</label>
+            <InputNumber id="Quantity" class="form-control pe-2" @bind-Value="model.Quantity" placeholder="Example: 10" />
+        </div>
+        <label for="ImageURL" class="form-label">Image URL</label>
+        <InputText id="ImageURL" class="form-control" @bind-Value="model.ImageURL" placeholder="Example: https://example.com/image.png" />
+
+        <label for="PkgType" class="form-label">Package Type</label>
+        <InputSelect id="PkgType" class="form-select" @bind-Value="model.PackageTypeId">
+            @foreach (PackageType type in packageTypes)
+            {
+                <option value="@type.Id">@type.Name</option>
+            }
+        </InputSelect>
+
+        <button role="button" class="btn btn-primary" @onclick="Submit">
+            Submit
+        </button>
+    </EditForm>
+</div>
+
+
+
+@code{
     [Parameter]
     public string id { get; set; }
     public Guid businessId { get; set; }
@@ -43,5 +81,54 @@
         }
 
         currentBusiness = result.Value;
+
+        await LoadPackageTypes();
+    }
+}
+
+
+@* Package Creation *@
+@code
+{
+    private List<PackageType> packageTypes = new();
+
+
+    private async Task LoadPackageTypes()
+    {
+        var result = await pkgTypeRepo.GetAllAsync();
+        packageTypes = result.ToList();
+    }
+
+    private class PackageFormModel
+    {
+        public string Name { get; set; }
+        public string? Description { get; set; }
+        public float Price { get; set; }
+        public int Quantity { get; set; }
+        public string? ImageURL { get; set; }
+        public string PackageTypeId { get; set; }
+    }
+
+    private PackageFormModel model = new();
+
+
+    private async Task Submit()
+    {
+        var id = Guid.Parse(model.PackageTypeId);
+        var pkgType = packageTypes.FirstOrDefault(pt => pt.Id == id);
+        Package pkg = new Package
+            {
+                Name = model.Name,
+                Description = model.Description,
+                Price = model.Price,
+                Quantity = model.Quantity,
+                ImageURL = model.ImageURL,
+                Business = currentBusiness,
+                PackageType = pkgType
+            };
+
+        await packageController.AddAsync(pkg);
+        NavigationManager.NavigateTo($"/catalog/{currentBusiness.Id}");
+
     }
 }

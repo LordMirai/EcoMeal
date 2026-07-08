@@ -1,4 +1,6 @@
 ﻿@page "/businesses/create"
+@page "/businesses/edit/{BusinessID}"
+
 @rendermode InteractiveServer
 
 @using EcoMeal.Entities;
@@ -55,7 +57,14 @@ else
                 }
             </InputSelect>
 
-            <button type="button" role="button" class="btn btn-primary mt-2" @onclick="Submit">Submit</button>
+            @if (isEditMode)
+            {
+                <button type="button" role="button" class="btn btn-info mt-2" @onclick="SubmitUpdate">Edit Existing Business</button>
+            }
+            else
+            {
+                <button type="button" role="button" class="btn btn-primary mt-2" @onclick="Submit">Submit</button>
+            }
         </div>
     </EditForm>
 }
@@ -104,7 +113,7 @@ else
 
         NavigationManager.NavigateTo("/businesses");
     }
-
+    
     private void UpdatePreview()
     {
         imageLoadFailed = false;
@@ -117,4 +126,63 @@ else
         imageLoadFailed = true;
     }
 
+}
+
+
+
+@* Editing existing business *@
+@code {
+    [Parameter]
+    public string? BusinessId { get; set; }
+    public Business existingBusiness;
+    public Guid id { get; set; }
+    public bool isEditMode = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        base.OnParametersSet();
+
+        Console.WriteLine($"BusinessID: {BusinessId}");
+
+        try
+        {
+            id = Guid.Parse(BusinessId);
+        }
+        catch (FormatException)
+        {
+            Console.WriteLine("Invalid BusinessID format.");
+            NavigationManager.NavigateTo("/businesses");
+            return;
+        }
+
+        var result = await BusinessController.GetById(id);
+        existingBusiness = result.Value;
+
+        if (existingBusiness != null)
+        {
+            model.Name = existingBusiness.Name;
+            model.Description = existingBusiness.Description;
+            model.Address = existingBusiness.Address;
+            model.ImageURL = existingBusiness.ImageURL;
+            model.BusinessTypeId = existingBusiness.BusinessType?.Id.ToString();
+
+            isEditMode = true;
+        }
+    }
+
+    private async Task SubmitUpdate()
+    {
+        var result = await BusinessController.GetTypeAsync(model.BusinessTypeId);
+        BusinessType? btype = result.Value;
+        existingBusiness.Name = model.Name;
+        existingBusiness.Description = model.Description;
+        existingBusiness.Address = model.Address;
+        existingBusiness.ImageURL = model.ImageURL;
+        existingBusiness.BusinessType = btype;
+        
+        await BusinessController.UpdateAsync(existingBusiness);
+        
+        Util.SetMessage("Business updated successfully!");
+        NavigationManager.NavigateTo("/businesses");
+    }
 }

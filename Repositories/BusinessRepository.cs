@@ -7,10 +7,15 @@ namespace EcoMeal.Repositories;
 
 public class BusinessRepository(EcoMealDbContext context) : IBusinessRepository
 {
-    public async Task<List<Business>> GetAllAsync()
+    public async Task<List<Business>> GetAllAsync(bool includeDeleted = false)
     {
-        
-        return await context.Businesses.Include(b=>b.BusinessType).ToListAsync();
+        var query = context.Businesses.AsQueryable();
+        if (!includeDeleted)
+        {
+            query = query.Where(b => !b.IsDeleted);
+        }
+        //return await context.Businesses.Include(b=>b.BusinessType).ToListAsync();
+        return await query.Include(b=>b.BusinessType).ToListAsync();
     }
 
     public async Task AddAsync(Business business)
@@ -28,11 +33,14 @@ public class BusinessRepository(EcoMealDbContext context) : IBusinessRepository
         return await context.Businesses.FindAsync(id);
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task DeleteAsync(Business business)
     {
-        var business = await context.Businesses.FindAsync(id);
-        if (business is null) return;
-        context.Businesses.Remove(business);
+        business.IsDeleted = true;
+    }
+
+    public async Task RestoreAsync(Business business)
+    {
+        business.IsDeleted = false;
     }
 
     public async Task SaveChangesAsync()

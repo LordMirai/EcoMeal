@@ -23,15 +23,55 @@
     return;
 }
 
-<div class="container-sm">
-    <div class="fw-semibold">
-        Business "@currentBusiness?.Name" has @(packages?.Count ?? 0)<i class="bi bi-box-seam-fill"></i> packages available.
-    </div>
+@if (currentBusiness != null)
+{
+    <div class="container-sm">
+        <div class="fw-semibold">
+            Business "@currentBusiness?.Name" has @(packages?.Count ?? 0)<i class="bi bi-box-seam-fill"></i> packages available.
+        </div>
+        <div class="d-flex flex-wrap gap-3 align-items-center mb-3">
+            <div class="mt-2 p-2 border rounded bg-light text-center" style="max-width: 300px;">
+                <img src="@currentBusiness.ImageURL" class="img-thumbnail" style="width: 300px; height: 300px;" />
+            </div>
+        </div>
 
-    <a class="btn btn-primary" role="button" href="/create-package/@BusinessID">
-    Create New Package Listing <i class="bi bi-box-seam-fill"></i>
-    </a>
-</div>
+        <a class="btn btn-primary" role="button" href="/create-package/@BusinessID">
+        Create New Package Listing <i class="bi bi-box-seam-fill"></i>
+        </a>
+
+            @if ((packages?.Count ?? 0) > 0)
+            {
+                @* Todo: make these pretty with cards *@
+                <table class="table table-bordered table-hover mt-3">
+                    <thead>
+                        <tr class="table-dark">
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Image</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (Package pkg in packages)
+                        {
+                            <tr>
+                                <td>@pkg.Id</td>
+                                <td>@pkg.Name</td>
+                                <td>@pkg.Description</td>
+                                <td>@pkg.Price</td>
+                                <td>@pkg.Quantity</td>
+                                <td>
+                                    <img src="@pkg.ImageURL" alt="photo" style="width:100px; height:100px;"/>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+     </div>
+}
 
 
 
@@ -73,7 +113,5 @@
 
         ActionResult<List<Package>> packageResult = await packageController.GetByBusinessIdAsync(BusinessID);
         packages = packageResult.Value;
-
-        Console.WriteLine("Ok things loaded fine.");
     }
 }

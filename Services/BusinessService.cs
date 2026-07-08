@@ -7,9 +7,9 @@ namespace EcoMeal.Services;
 
 public class BusinessService(IBusinessRepository businessRepository) : IBusinessService
 {
-    public async Task<List<Business>> GetAll()
+    public async Task<List<Business>> GetAll(bool includeDeleted = false)
     {
-        return await businessRepository.GetAllAsync();
+        return await businessRepository.GetAllAsync(includeDeleted);
     }
 
     public async Task AddAsync(Business business)
@@ -20,12 +20,29 @@ public class BusinessService(IBusinessRepository businessRepository) : IBusiness
 
     public async Task DeleteAsync(Business business)
     {
-        await businessRepository.DeleteAsync(business.Id);
+        await businessRepository.DeleteAsync(business);
+        await businessRepository.SaveChangesAsync();
+    }
+
+    public async Task RestoreAsync(Business business)
+    {
+        await businessRepository.RestoreAsync(business);
         await businessRepository.SaveChangesAsync();
     }
 
     public async Task<Business?> GetById(Guid id)
     {
         return await businessRepository.GetByIdAsync(id);
+    }
+
+    public async Task UpdateAsync(Business business)
+    {
+        // manual db update element by element
+        var existingBusiness = await businessRepository.GetByIdAsync(business.Id);
+        existingBusiness.Name = business.Name;
+        existingBusiness.Description = business.Description;
+        existingBusiness.Address = business.Address;
+        existingBusiness.ImageURL = business.ImageURL;
+        await businessRepository.SaveChangesAsync();
     }
 }

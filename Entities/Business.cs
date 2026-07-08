@@ -14,5 +14,6 @@ namespace EcoMeal.Entities
 
         [ForeignKey("BusinessTypeId")]
         public required BusinessType BusinessType { get; set; }
+        public bool IsDeleted { get; set; } = false;
     }
 }
