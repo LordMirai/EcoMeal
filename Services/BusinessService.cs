@@ -39,10 +39,13 @@ public class BusinessService(IBusinessRepository businessRepository) : IBusiness
     {
         // manual db update element by element
         var existingBusiness = await businessRepository.GetByIdAsync(business.Id);
+        if (existingBusiness is null) return;
+
         existingBusiness.Name = business.Name;
         existingBusiness.Description = business.Description;
         existingBusiness.Address = business.Address;
         existingBusiness.ImageURL = business.ImageURL;
+        
         await businessRepository.SaveChangesAsync();
     }
 }

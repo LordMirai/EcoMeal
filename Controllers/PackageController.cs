@@ -40,5 +40,9 @@ public class PackageController(IPackageService packageService) : ControllerBase
         return packages;
     }
 
-
+    public async Task<ActionResult> UpdateAsync(Package package)
+    {
+        await packageService.UpdateAsync(package);
+        return NoContent();
+    }
 }

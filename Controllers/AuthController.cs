@@ -31,10 +31,38 @@ public class AuthController(IAuthService authService): ControllerBase
         await authService.LogoutAsync();
         return LocalRedirect("/");
     }
+
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromForm] EcoRegisterRequest request, [FromQuery] string? returnUrl)
+    {
+
+        var result = await authService.RegisterAsync(request);
+
+        if (result.Succeeded)
+        {
+            return LocalRedirect("/");
+        }
+
+        var firstError = result.Errors.FirstOrDefault()?.Description ?? "Registration failed";
+        var encodedError = Uri.EscapeDataString(firstError);
+
+
+
+        return LocalRedirect($"/register?error={encodedError}&returnUrl={Uri.EscapeDataString(returnUrl ?? "/")}");
+    }
 }
 
 public class EcoLoginRequest {
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public bool Remember { get; set; } = false;
+}
+
+public class EcoRegisterRequest
+{
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string ConfirmPassword { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
 }

@@ -1,0 +1,36 @@
+﻿@page "/register"
+
+@using EcoMeal.Controllers;
+
+<PageTitle>Register</PageTitle>
+
+<h1>Register a new account</h1>
+<hr />
+
+<div class="container mt-3">
+
+    @if (Error is not null)
+    {
+        <div class="alert alert-danger" role="alert">
+            ERROR: @Error
+        </div>
+        <hr />
+    }
+
+    <EditForm Model="@model" FormName="RegisterForm" Action="/api/auth/register" Method="post" Enhance>
+        <InputText id="email" name="email" type="email" class="form-control mb-2" placeholder="Email (e.g. MArch42@scp.fnd.ca)" @bind-value="model.Email" required />
+        <InputText id="password" name="password" type="password" class="form-control mb-2" placeholder="Password (e.g. P@ssw0rd!)" @bind-value="model.Password" required />
+        <InputText id="confirmPassword" name="confirmPassword" type="password" class="form-control mb-2" placeholder="Confirm Password (same as above)" @bind-value="model.ConfirmPassword" required />
+        <InputText id="fullName" name="fullName" type="text" class="form-control mb-2" placeholder="Full Name (e.g. Mirai Archaeus)" @bind-value="model.FullName" required />
+
+        <input type="submit" class="btn btn-primary fw-bold" value="Register" />
+    </EditForm>
+
+</div>
+
+@code {
+    public EcoRegisterRequest model = new();
+
+    [SupplyParameterFromQuery]
+    public string? Error { get; set; }
+}

@@ -24,7 +24,10 @@ public class PackageRepository(EcoMealDbContext context): IPackageRepository
 
     public async Task<Package?> GetByIdAsync(Guid id)
     {
-        return await context.Packages.FindAsync(id);
+        return await context.Packages
+            .Include(p => p.PackageType)
+            .Include(p => p.Business)
+            .FirstOrDefaultAsync(p => p.Id == id);
     }
 
     public async Task DeleteAsync(Guid id)

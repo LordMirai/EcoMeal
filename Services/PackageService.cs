@@ -23,7 +23,19 @@ public class PackageService(IPackageRepository packageRepository) : IPackageServ
 
     public async Task UpdateAsync(Package package)
     {
-        await packageRepository.UpdateAsync(package);
+        var existing = await packageRepository.GetByIdAsync(package.Id);
+        if (existing is null) return;
+
+        existing.Name = package.Name;
+        existing.Description = package.Description;
+        existing.Price = package.Price;
+        existing.Quantity = package.Quantity;
+        existing.ExpiryDate = package.ExpiryDate;
+        existing.ImageURL = package.ImageURL;
+        existing.Business = package.Business;
+        existing.PackageType = package.PackageType;
+        existing.PickupTime = package.PickupTime;
+
         await packageRepository.SaveChangesAsync();
     }
 

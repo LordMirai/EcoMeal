@@ -2,6 +2,7 @@
 @page "/create-package/edit/{existingId}"
 @rendermode InteractiveServer
 
+<PageTitle> Create/Edit Package</PageTitle>
 
 @using EcoMeal.Entities
 @using EcoMeal.Controllers
@@ -15,84 +16,170 @@
 @inject PackageController packageController
 @inject PackageTypeRepository pkgTypeRepo
 
-<h2>Create Package Listing</h2>
-<hr />
-
-<div class="container-sm mt-2">
-    <EditForm Model="@model" FormName="CreatePackageForm" OnValidSubmit="Submit">
-        <label for="Name" class="form-label">Package Name</label>
-        <InputText id="Name" class="form-control" @bind-Value="model.Name" placeholder="Example: Power Drill Set"/>
-        
-        <label for="Description" class="form-label">Description</label>
-        <InputText id="Description" class="form-control" @bind-Value="model.Description" placeholder="Example: A set containing five power tools."/>
-
-        <div class="input-group">
-            <label for="Price" class="form-label me-2">Price</label>
-            <InputNumber id="Price" class="form-control" @bind-Value="model.Price" placeholder="Example: 49.99" />
-
-            <label for="Quantity" class="form-label ms-2 me-2">Quantity</label>
-            <InputNumber id="Quantity" class="form-control pe-2" @bind-Value="model.Quantity" placeholder="Example: 10" />
+<div class="container mt-4" style="max-width: 700px;">
+    @* Clean Header Card Layout *@
+    <div class="card shadow-sm border-0 mb-4 rounded-3">
+        <div class="card-body p-4">
+            <h2 class="h4 fw-bold mb-1 text-primary">
+                @(isEditMode ? "Edit Package Listing" : "Create Package Listing")
+            </h2>
+            <p class="text-muted fs-6 mb-0">
+                Business is: <span class="fw-semibold text-dark">@currentBusiness?.Name</span>
+            </p>
         </div>
-        <label for="ImageURL" class="form-label">Image URL</label>
-        <InputText id="ImageURL" class="form-control" @bind-Value="model.ImageURL" placeholder="Example: https://example.com/image.png" />
+    </div>
 
-        <label for="PkgType" class="form-label">Package Type</label>
-        <InputSelect id="PkgType" class="form-select" @bind-Value="model.PackageTypeId">
-            @foreach (PackageType type in packageTypes)
-            {
-                <option value="@type.Id">@type.Name</option>
-            }
-        </InputSelect>
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-4">
+            <EditForm Model="@model" FormName="CreatePackageForm" OnSubmit="Submit" @key="(isEditMode ? existingId : id)">
 
-        <button role="button" class="btn btn-primary" @onclick="Submit">
-            Submit
-        </button>
-    </EditForm>
+                <!-- Package Name -->
+                <div class="mb-3">
+                    <label for="Name" class="form-label fw-semibold small text-secondary">Package Name</label>
+                    <InputText id="Name" class="form-control" @bind-Value="model.Name" placeholder="Example: Power Drill Set" required />
+                </div>
+
+                <!-- Description -->
+                <div class="mb-3">
+                    <label for="Description" class="form-label fw-semibold small text-secondary">Description</label>
+                    <InputText id="Description" class="form-control" @bind-Value="model.Description" placeholder="Example: A set containing five power tools." required />
+                </div>
+
+                <!-- Price and Quantity Row -->
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6">
+                        <label for="Price" class="form-label fw-semibold small text-secondary">Price</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <InputNumber id="Price" class="form-control" @bind-Value="model.Price" placeholder="Example: 49.99" required />
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <label for="Quantity" class="form-label fw-semibold small text-secondary">Quantity</label>
+                        <InputNumber id="Quantity" class="form-control" @bind-Value="model.Quantity" placeholder="Whole number (10)" required />
+                    </div>
+                </div>
+
+                <!-- Image URL -->
+                <div class="mb-3">
+                    <label for="ImageURL" class="form-label fw-semibold small text-secondary">Image URL</label>
+                    <InputText id="ImageURL" class="form-control" @bind-Value="model.ImageURL" placeholder="Example: https://example.com/image.png" required />
+                </div>
+
+                <!-- Package Type -->
+                <div class="mb-4">
+                    <label for="PkgType" class="form-label fw-semibold small text-secondary">Package Type</label>
+                    <InputSelect id="PkgType" class="form-select" @bind-Value="model.PackageTypeId" required>
+                        <option value="" disabled selected>-- Select a Type --</option>
+                        @foreach (PackageType type in packageTypes)
+                        {
+                            <option value="@type.Id">@type.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                    <a href="/catalog/@currentBusiness?.Id" class="btn btn-outline-secondary px-4">Cancel</a>
+                    <button type="submit" id="btnSubmitPackage" class="btn btn-primary px-4 fw-semibold">
+                        @(isEditMode ? "Save Changes" : "Create")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
 </div>
 
-
-
-@code{
+@code {
     [Parameter]
-    public string id { get; set; }
+    public string? id { get; set; }
+
+    [Parameter]
+    public string? existingId { get; set; }
+
     public Guid businessId { get; set; }
     public Business? currentBusiness { get; set; }
 
+    public bool isEditMode = false;
+    private Guid pkgId;
+    private Package? existingPackage;
+    private List<PackageType> packageTypes = new();
+    private PackageFormModel model = new();
+
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            businessId = Guid.Parse(id);
-        }
-        catch(FormatException)
-        {
-            Console.WriteLine("Obviously, bad ID");
-            Util.SetMessage("Bad ID", "danger");
-            NavigationManager.NavigateTo("/businesses");
-            return;
-        }
-
-        var result = await businessController.GetById(businessId);
-        if (result.Result is NotFoundResult)
-        {
-            Console.WriteLine("Business not found");
-            Util.SetMessage("Business not found", "danger");
-            NavigationManager.NavigateTo("/businesses");
-            return;
-        }
-
-        currentBusiness = result.Value;
-
         await LoadPackageTypes();
     }
-}
 
+    protected override async Task OnParametersSetAsync()
+    {
+        base.OnParametersSet();
 
-@* Package Creation *@
-@code
-{
-    private List<PackageType> packageTypes = new();
+        // EDIT MODE
+        if (!string.IsNullOrEmpty(existingId))
+        {
+            try
+            {
+                pkgId = Guid.Parse(existingId);
+            }
+            catch (FormatException)
+            {
+                Console.WriteLine("Invalid Package ID format.");
+                Util.SetMessage("Invalid Package ID format.", "danger");
+                NavigationManager.NavigateTo("/businesses");
+                return;
+            }
 
+            var existingResult = await packageController.GetByIdAsync(pkgId);
+            existingPackage = existingResult.Value;
+
+            if (existingPackage == null)
+            {
+                Util.SetMessage("Package not found.", "danger");
+                NavigationManager.NavigateTo("/businesses");
+                return;
+            }
+
+            // Map data from existing domain entity into the local page model
+            model.Name = existingPackage.Name;
+            model.Description = existingPackage.Description ?? string.Empty; // Fail-safe snapshot fallback
+            model.Price = existingPackage.Price;
+            model.Quantity = (int)existingPackage.Quantity;
+            model.ImageURL = existingPackage.ImageURL;
+            model.PackageTypeId = existingPackage.PackageType?.Id.ToString() ?? string.Empty;
+
+            currentBusiness = existingPackage.Business;
+            isEditMode = true;
+        }
+        // CREATION MODE
+        else if (!string.IsNullOrEmpty(id))
+        {
+            try
+            {
+                businessId = Guid.Parse(id);
+            }
+            catch (FormatException)
+            {
+                Console.WriteLine("Obviously, bad ID");
+                Util.SetMessage("Bad ID", "danger");
+                NavigationManager.NavigateTo("/businesses");
+                return;
+            }
+
+            var result = await businessController.GetById(businessId);
+            if (result.Result is NotFoundResult)
+            {
+                Console.WriteLine("Business not found");
+                Util.SetMessage("Business not found", "danger");
+                NavigationManager.NavigateTo("/businesses");
+                return;
+            }
+
+            currentBusiness = result.Value;
+            isEditMode = false;
+        }
+    }
 
     private async Task LoadPackageTypes()
     {
@@ -100,27 +187,40 @@
         packageTypes = result.ToList();
     }
 
-    private class PackageFormModel
-    {
-        public string Name { get; set; }
-        public string? Description { get; set; }
-        public float Price { get; set; }
-        public int Quantity { get; set; }
-        public string? ImageURL { get; set; }
-        public string PackageTypeId { get; set; }
-    }
-
-    private PackageFormModel model = new();
-
-
     private async Task Submit()
     {
-        var id = Guid.Parse(model.PackageTypeId);
-        var pkgType = packageTypes.FirstOrDefault(pt => pt.Id == id);
-        Package pkg = new Package
+        if (string.IsNullOrWhiteSpace(model.Name) || currentBusiness == null)
+        {
+            return;
+        }
+
+        // Resolve selected package type
+        PackageType? pkgType = null;
+        if (Guid.TryParse(model.PackageTypeId, out var parsedTypeId))
+        {
+            pkgType = packageTypes.FirstOrDefault(pt => pt.Id == parsedTypeId);
+        }
+
+        if (isEditMode && existingPackage != null)
+        {
+            // Update the loaded domain tracking object directly in-situ
+            existingPackage.Name = model.Name;
+            existingPackage.Description = model.Description;
+            existingPackage.Price = model.Price;
+            existingPackage.Quantity = model.Quantity;
+            existingPackage.ImageURL = model.ImageURL;
+            existingPackage.PackageType = pkgType;
+
+            await packageController.UpdateAsync(existingPackage);
+            NavigationManager.NavigateTo($"/catalog/{currentBusiness.Id}");
+        }
+        else
+        {
+            // Instantiate brand new object
+            Package pkg = new Package
             {
                 Name = model.Name,
-                Description = model.Description,
+                Description = model.Description, // Guaranteed non-null by form model initialization
                 Price = model.Price,
                 Quantity = model.Quantity,
                 ImageURL = model.ImageURL,
@@ -128,33 +228,22 @@
                 PackageType = pkgType
             };
 
-        await packageController.AddAsync(pkg);
+            await packageController.AddAsync(pkg);
+            Util.SetMessage("Package created successfully!");
+        }
+
         NavigationManager.NavigateTo($"/catalog/{currentBusiness.Id}");
-
     }
-}
 
-@* Package editing *@
-@code {
-    [Parameter]
-    public string existingId { get; set; }
-
-    Guid pkgId;
-
-    protected override async Task OnParametersSetAsync()
+    private class PackageFormModel
     {
-        base.OnParametersSet();
+        public string Name { get; set; } = string.Empty;
 
-        try
-        {
-            pkgId = Guid.Parse(existingId);
-        }
-        catch (FormatException)
-        {
-            Console.WriteLine("Invalid Package ID format.");
-            Util.SetMessage("Invalid Package ID format.", "danger");
-            NavigationManager.NavigateTo("/businesses");
-            return;
-        }
+        // Changed to guaranteed string.Empty instantiation to block EF Core SQL NULL crashes
+        public string Description { get; set; } = string.Empty;
+        public float Price { get; set; }
+        public int Quantity { get; set; }
+        public string? ImageURL { get; set; }
+        public string PackageTypeId { get; set; } = string.Empty;
     }
 }

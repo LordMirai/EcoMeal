@@ -50,6 +50,7 @@
                             <th>Price</th>
                             <th>Quantity</th>
                             <th>Image</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -62,6 +63,11 @@
                                 <td>@pkg.Quantity</td>
                                 <td>
                                     <img src="@pkg.ImageURL" alt="photo" style="width:100px; height:100px;"/>
+                                </td>
+                                <td>
+                                    <a href="/create-package/edit/@pkg.Id" class="btn btn-warning" role="button">
+                                        Edit <i class="bi bi-pencil-square"></i>
+                                    </a>
                                 </td>
                             </tr>
                         }

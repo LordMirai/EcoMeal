@@ -17,4 +17,41 @@ public class AuthService(SignInManager<ApplicationUser> signInManager, UserManag
     {
         await signInManager.SignOutAsync();
     }
+
+    public async Task<IdentityResult> RegisterAsync(EcoRegisterRequest registerRequest)
+    {
+
+        if (registerRequest.Password != registerRequest.ConfirmPassword)
+        {
+            return IdentityResult.Failed(new IdentityError { 
+                Code = "PasswordMismatch",
+                Description = "Passwords do not match." 
+            });
+        }
+
+        var existingUser = await userManager.FindByEmailAsync(registerRequest.Email);
+        if (existingUser != null)
+        {
+            return IdentityResult.Failed(new IdentityError
+            {
+                Code = "EmailAlreadyExists",
+                Description = "A user with this email already exists."
+            });
+        }
+
+        var newUser = new ApplicationUser
+        {
+            UserName = registerRequest.Email,
+            Email = registerRequest.Email,
+            FullName = registerRequest.FullName
+        };
+
+        var result = await userManager.CreateAsync(newUser, registerRequest.Password);
+        if (result.Succeeded)
+        {
+            await signInManager.SignInAsync(newUser, isPersistent: false);
+        }
+
+        return result;
+    }
 }
