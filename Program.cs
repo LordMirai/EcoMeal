@@ -62,7 +62,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequireUppercase = false;
     options.Password.RequireLowercase = true;
 }).AddEntityFrameworkStores<EcoMealDbContext>()
-    .AddDefaultTokenProviders();
+    .AddDefaultTokenProviders()
+    .AddClaimsPrincipalFactory<CustomClaimsPrincipalFactory>();
 
 builder.Services.AddCascadingAuthenticationState();
 

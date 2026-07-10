@@ -31,10 +31,12 @@
     }
 
     <div>
-        Bababooey
         <AuthorizeView>
             <Authorized>
-                <p>You are logged in! Welcome, @context.User.Identity?.Name</p>
+                <p>You are logged in! Welcome, @context.User.Identity?.Name. Full name: @context.User.FindFirst("FullName")?.Value
+                    @(context.User.IsInRole(AppRoles.Admin) ? "You are an admin." : "You are not an admin.")
+                    @* I AM FUCKING FUMING RIGHT NOW. WHAT THE FUCK IS THIS? WHY DID I WASTE SO MUCH TIME ON DOING IT MANUALLY? *@
+                </p>
             </Authorized>
             <NotAuthorized>
                 <p>You are a guest.</p>
