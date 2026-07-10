@@ -1,9 +1,11 @@
 using EcoMeal.Components;
 using EcoMeal.Controllers;
 using EcoMeal.Database;
+using EcoMeal.Entities;
 using EcoMeal.Repositories;
 using EcoMeal.Repositories.Interfaces;
 using EcoMeal.Services;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,16 +37,41 @@ builder.Services.AddScoped<IBusinessTypeService, BusinessTypeService>();
 
 builder.Services.AddScoped<IPackageRepository, PackageRepository>();
 builder.Services.AddScoped<IPackageService, PackageService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddScoped<IPackageTypeRepository,  PackageTypeRepository>();
 
 builder.Services.AddControllers();
 builder.Services.AddScoped<BusinessController>();
 builder.Services.AddScoped<PackageController>();
+builder.Services.AddScoped<AuthController>();
 
+
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    options.SignIn.RequireConfirmedAccount = false;
+
+    options.Password.RequireDigit = true;
+    options.Password.RequiredLength = 8;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = true;
+}).AddEntityFrameworkStores<EcoMealDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/login";
+    options.AccessDeniedPath = "/access-denied"; // TODO optional?
+});
 
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    await DbSeeder.SeedAsync(scope.ServiceProvider, builder.Configuration);
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -56,6 +83,10 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+app.MapControllers();
+
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapStaticAssets();

@@ -1,4 +1,5 @@
 ﻿@page "/create-package/{id}"
+@page "/create-package/edit/{existingId}"
 @rendermode InteractiveServer
 
 
@@ -130,5 +131,30 @@
         await packageController.AddAsync(pkg);
         NavigationManager.NavigateTo($"/catalog/{currentBusiness.Id}");
 
+    }
+}
+
+@* Package editing *@
+@code {
+    [Parameter]
+    public string existingId { get; set; }
+
+    Guid pkgId;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        base.OnParametersSet();
+
+        try
+        {
+            pkgId = Guid.Parse(existingId);
+        }
+        catch (FormatException)
+        {
+            Console.WriteLine("Invalid Package ID format.");
+            Util.SetMessage("Invalid Package ID format.", "danger");
+            NavigationManager.NavigateTo("/businesses");
+            return;
+        }
     }
 }

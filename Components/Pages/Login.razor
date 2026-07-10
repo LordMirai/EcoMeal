@@ -1,0 +1,66 @@
+﻿@page "/login"
+
+<PageTitle>Login</PageTitle>
+
+<h1>Login</h1>
+<hr />
+
+<div class="container mt-3">
+    @* <EditForm Model="@model" OnValidSubmit="Submit" FormName="LoginForm">
+        <input type="hidden" name="returnUrl" value="@ReturnUrl"
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <InputText id="email" class="form-control" @bind-Value="model.Email" />
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <InputText id="password" type="password" class="form-control" @bind-Value="model.Password" />
+        </div>
+        <button type="submit" class="btn btn-primary">Login</button>
+    </EditForm> *@
+
+    <form method="post" action="api/auth/login">
+        <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+        <div class="mb-3">
+            <label>Email</label>
+            <input class="form-control" type="email" name="email" />
+        </div>
+        <div class="mb-3">
+            <label>Password</label>
+            <input class="form-control" type="password" name="password" />
+        </div>
+        <button class="btn btn-primary" type="submit">Log in</button>
+    </form>
+
+    @if(Error is not null)
+    {
+        <hr />
+
+        <div class="alert alert-danger" role="alert">
+            ERROR:  @Error
+        </div>
+        
+    }
+
+</div>
+
+@code {
+    private class LoginModel
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+
+    private LoginModel model = new();
+
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery]
+    public  string? Error { get; set; }
+
+    private void Submit()
+    {
+        Console.WriteLine($"Username: {model.Email}, Password: {model.Password}");
+    }
+}

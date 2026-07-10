@@ -1,5 +1,10 @@
 ﻿@page "/users"
 
+@using Microsoft.AspNetCore.Authorization;
+@using EcoMeal.Constants;
+
+@attribute [Authorize(Roles = AppRoles.Admin)]
+
 <PageTitle>Users</PageTitle>
 
 <h1>Users</h1>

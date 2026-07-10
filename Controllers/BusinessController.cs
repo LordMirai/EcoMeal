@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 namespace EcoMeal.Controllers;
 
 [ApiController]
-[Route("business")]
+[Route("/")]
 public class BusinessController(IBusinessService businessService, IBusinessTypeService businessTypeService) : ControllerBase
 {
     public async Task<ActionResult<List<Business>>> GetAll(bool includeDeleted=false)

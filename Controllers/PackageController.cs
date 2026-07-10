@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 namespace EcoMeal.Controllers;
 
 [ApiController]
-[Route("package")]
+[Route("/")]
 public class PackageController(IPackageService packageService) : ControllerBase
 {
     public async Task<ActionResult<List<Package>>> GetAll()
