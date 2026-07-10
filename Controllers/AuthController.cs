@@ -1,5 +1,4 @@
 ﻿using EcoMeal.Repositories.Interfaces;
-using EcoMeal.Services;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,6 +12,7 @@ public class AuthController(IAuthService authService): ControllerBase
     public async Task<IActionResult> Login([FromForm] LoginRequest request, [FromQuery] string? returnUrl)
     {
         var result = await authService.LoginAsync(request);
+
         if (result.Succeeded)
         {
             return LocalRedirect(returnUrl ?? "/");

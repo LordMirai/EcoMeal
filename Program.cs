@@ -16,7 +16,8 @@ builder.Services.AddRazorComponents()
 
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<EcoMealDbContext>(options => options.UseSqlServer(connectionString));
+//builder.Services.AddDbContext<EcoMealDbContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddDbContextFactory<EcoMealDbContext>(options => options.UseSqlServer(connectionString));
 
 builder.Services.AddScoped<OrderRepository>();
 builder.Services.AddScoped<OrderEntryRepository>();
@@ -41,10 +42,14 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddScoped<IPackageTypeRepository,  PackageTypeRepository>();
 
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7023") }); // Use your actual local port
+
 builder.Services.AddControllers();
 builder.Services.AddScoped<BusinessController>();
 builder.Services.AddScoped<PackageController>();
 builder.Services.AddScoped<AuthController>();
+
+builder.Services.AddScoped<UserContext>();
 
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -58,6 +63,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequireLowercase = true;
 }).AddEntityFrameworkStores<EcoMealDbContext>()
     .AddDefaultTokenProviders();
+
+builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -83,11 +90,11 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
-app.MapControllers();
-
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
+
+app.MapControllers();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

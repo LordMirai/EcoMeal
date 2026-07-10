@@ -2,8 +2,11 @@
 
 @using Microsoft.AspNetCore.Authorization;
 @using EcoMeal.Constants;
+@using EcoMeal.Entities;
+@using EcoMeal.Controllers;
 
 @attribute [Authorize(Roles = AppRoles.Admin)]
+
 
 <PageTitle>Users</PageTitle>
 
@@ -11,17 +14,65 @@
 <hr />
 
 <div class="container-sm">
-    <div class="alert alert-danger fw-bold fs-3" role="alert">
-        HEY! WHEN I HAVE TIME TO FUCK AROUND WITH USERS, I'LL LET YOU KNOW OK?
-    </div>
+    Ok so current user...<br />
 
-    <div class="card">
-        <span class="fs-4">Here, have a spinning fish.</span>
-        <br />
-        <img src="https://spinning.fish/fish.gif" style="width:50%; height:50%;"/>
+    @if (currUser == null)
+    {
+        <p>Currently null</p>
+    }
+    else
+    {
+        <p>
+            <ul>
+                <li>Name: @currUser.FullName</li>
+                @* <li>ID:  @currUser.Role</li> *@
+            </ul>
+        </p>
+    }
+
+    <div>
+        Bababooey
+        <AuthorizeView>
+            <Authorized>
+                <p>You are logged in! Welcome, @context.User.Identity?.Name</p>
+            </Authorized>
+            <NotAuthorized>
+                <p>You are a guest.</p>
+            </NotAuthorized>
+        </AuthorizeView>
     </div>
 </div>
 
+
+
+@using Microsoft.AspNetCore.Components.Authorization;
+@using Microsoft.AspNetCore.Identity;
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<ApplicationUser> UserManager
+
 @code {
 
+    ApplicationUser currUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userPrincipal = authState.User;
+        
+        string userId = "???";
+
+        if (userPrincipal.Identity is { IsAuthenticated: true })
+        {
+            userId = UserManager.GetUserId(userPrincipal) ?? "[nil]";
+
+            if (userId != "[nil]")
+            {
+                currUser = await UserManager.FindByIdAsync(userId);
+            }
+        }
+        else
+        {
+            userId = "[Unauthenticated Guest]";
+        }
+    }
 }
