@@ -7,227 +7,251 @@
 @using EcoMeal.Services;
 @using Bogus
 
-
 @inject BusinessRepository BusinessRepo
 @inject BusinessController businessController
 @inject UtilityService Util
-
 @inject NavigationManager NavigationManager
 
-<PageTitle>Businesses/Restaurants</PageTitle>
+<PageTitle>Businesses / Restaurants</PageTitle>
 
-<h1>Businesses</h1>
-<hr />
-@* Hello this is where we are. Alert? @(Util.HasAlert() ? "yes" : "no") - Type: @Util.AlertType - Message: "@(Util.AlertMessage ?? "[none]")" *@
-
-@if (Util.HasAlert())
-{
-    <div class="alert alert-@(Util.AlertType) alert-dismissible fade show" role="alert">
-        @Util.AlertMessage
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    @if (Util.AlertSingleUse)
-    {
-        Util.ClearMessage();
-    }
-}
-
-<div class="container-sm">
-
-    <div class="input-group mb-3" role="group">
-        <button type="button" role="button" class="btn btn-primary me-2" @onclick="GenerateBusiness" title="(Clientside Only!)">Generate Business</button>
-        <input type="number" placeholder="Number of businesses to generate" @bind="numToGen" />
-        <a type="button" class="btn btn-dark ms-2" href="/businesses/create">Register new Business</a>
-    </div>
-
-
-    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
-        <div class="flex-grow-1" style="max-width: 400px;">
-            <input type="text"
-                   class="form-control"
-                   placeholder="Search by Name or GUID..."
-                   @bind="searchQuery"
-                   @bind:event="oninput" />
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-1">Businesses & Restaurants</h1>
+            <p class="text-muted small mb-0">Manage catalog configurations and operational listings</p>
         </div>
+        <a class="btn btn-primary shadow-sm" href="/businesses/create">
+            <i class="bi bi-plus-circle me-2"></i>Register New Business
+        </a>
+    </div>
+    <hr />
 
-        @if (columns != null)
+    @if (Util.HasAlert())
+    {
+        <div class="alert alert-@(Util.AlertType) alert-dismissible fade show shadow-sm" role="alert">
+            @Util.AlertMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        @if (Util.AlertSingleUse)
         {
-            <button type="button" class="btn btn-outline-secondary" @onclick="ToggleDropdown">
-                Display settings
-            </button>
+            Util.ClearMessage();
+        }
+    }
 
-
-            @if (isDropdownOpen)
-            {
-                <div class="position-fixed top-0 start-0 w-100 h-100"
-                     style="z-index: 1040; background: transparent; cursor: default;"
-                     @onclick="CloseDropdown">
+    <div class="card shadow-sm border-0 mb-4 bg-light">
+        <div class="card-body p-3">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="GenerateBusiness" title="(Clientside Only!)">Generate</button>
+                        <input type="number" class="form-control" placeholder="Qty" @bind="numToGen" style="max-width: 80px;" />
+                        <span class="input-group-text small text-muted">Faker Data</span>
+                    </div>
                 </div>
 
+                @* Query Filtering *@
+                <div class="col-md-4">
+                    <input type="text"
+                           class="form-control shadow-sm"
+                           placeholder="Search by Name or GUID..."
+                           @bind="searchQuery"
+                           @bind:event="oninput" />
+                </div>
 
-                <div class="position-absolute border rounded p-3 bg-dark text-white mt-1 shadow" style="z-index: 1050; min-width: 200px;">
-                    @foreach (string key in columns.Keys.ToList())
+                @* Display Settings *@
+                <div class="col-md-4 d-flex justify-content-md-end align-items-center gap-3">
+                    @if (columns != null)
                     {
-                        var uniqueId = $"col-{key}";
-                        <div class="form-check mb-2">
-                            <fieldset disabled="@(key.Equals("Name"))">
-                                <input type="checkbox"
-                                       id="@uniqueId"
-                                       class="form-check-input"
-                                       @bind="columns[key]" />
-                                <label for="@uniqueId" class="form-check-label">Show @key</label>
-                            </fieldset>
+                        <div class="position-relative">
+                            <button type="button" class="btn btn-outline-dark" @onclick="ToggleDropdown">
+                                <i class="bi bi-sliders me-2"></i>Display Settings
+                            </button>
+
+                            @if (isDropdownOpen)
+                            {
+                                <div class="position-fixed top-0 start-0 w-100 h-100" style="z-index: 1040;" @onclick="CloseDropdown"></div>
+                                <div class="position-absolute end-0 border rounded p-3 bg-dark text-white mt-2 shadow-lg animate-fade-in" style="z-index: 1050; min-width: 220px;">
+                                    <h6 class="dropdown-header text-muted ps-0 pt-0 border-bottom border-secondary pb-2 mb-2 text-uppercase fw-bold small">Toggle Fields</h6>
+                                    @foreach (string key in columns.Keys.ToList())
+                                    {
+                                        var uniqueId = $"col-{key}";
+                                        <div class="form-check mb-2">
+                                            <fieldset disabled="@(key.Equals("Name") || key.Equals("Action"))">
+                                                <input type="checkbox" id="@uniqueId" class="form-check-input" @bind="columns[key]" />
+                                                <label for="@uniqueId" class="form-check-label small">@key</label>
+                                            </fieldset>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        <div class="form-check form-switch mb-0 ms-2">
+                            <input type="checkbox" id="includeDel" class="form-check-input" @bind-value="includeDeleted" @bind-value:after="Refresh" />
+                            <label for="includeDel" class="form-check-label small fw-semibold text-secondary">Include Deleted</label>
                         </div>
                     }
                 </div>
-            }
-            <div class="flex-grow-1">
-                <label for="includeDel" class="form-label ms-3 me-1">Include Deleted?</label>
-                <input type="checkbox" class="form-check-input" checked="@includeDeleted" @oninput="Refresh" /> 
-                @* TODO: Fix this bs, includeDel doesn't work as expected. *@
             </div>
-        }
+        </div>
     </div>
+
+
 
     @if (businesses == null)
     {
-        <p>L o a d i n g . . .</p>
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <p class="text-secondary tracking-widest uppercase small">Loading Business Directory...</p>
+        </div>
+    }
+    else if (businesses.Count == 0 || FilteredBusinesses.Count == 0)
+    {
+        <div class="alert alert-warning shadow-sm border-0 p-4 text-center" role="alert">
+            <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
+            <h5 class="fw-bold">No Businesses Located</h5>
+            <p class="mb-0 text-muted small">No active listings fit your current layout filters or keyword queries.</p>
+        </div>
     }
     else
     {
-        <table class="table table-bordered table-hover table-striped">
-            <thead>
-                <tr class="table-dark">
-                    @foreach (var key in columns.Keys)
-                    {
-                        if (columns[key])
-                        {
-                            <th>
-                                @switch (key)
-                                {
-                                    case "Id":
-                                        <text>GUID</text>
-                                        ; break;
-                                    case "Name":
-                                        <text>Business Name</text>
-                                        ; break;
-                                    case "Type":
-                                        <text>Business Type</text>
-                                        ; break;
-                                    default:
-                                        <text>@key</text>
-                                        ; break;
-                                }
-                            </th>
-                        }
-                    }
-                </tr>
-            </thead>
-            <tbody>
-                @if (businesses.Count == 0 || FilteredBusinesses.Count == 0)
-                {
-                    <tr>
-                        @foreach (var key in columns.Keys)
-                        {
-                            if (columns[key])
-                            {
-                                <td>@(key == "Name" ? "No businesses found" : "N/A")</td>
-                            }
-                        }
-                    </tr>
-                }
-                else
-                {
-                    @foreach (var business in FilteredBusinesses)
-                    {
-                        var currentId = business.Id;
-                        bool isExpanded = expandedBusinessId == currentId;
+        @* We're making it pretty with bootstrap cards :D *@
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            @foreach (var business in FilteredBusinesses)
+            {
+                var currentId = business.Id;
+                bool isExpanded = expandedBusinessId == currentId;
 
-                        <tr>
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 position-relative rounded-3 transition-hover @(business.IsDeleted ? "border-start border-danger border-4 bg-opacity-10 bg-danger" : "")">
+                        @if (columns["Image"] && !string.IsNullOrEmpty(business.ImageURL))
+                        {
+                            <div class="position-relative overflow-hidden rounded-top-3" style="height: 160px; cursor: pointer;" @onclick="() => ToggleImage(currentId)">
+                                <img src="@business.ImageURL" class="w-100 h-100 object-fit-cover transition-transform @(isExpanded ? "scale-105" : "")" alt="Business Banner" />
+                                @if (business.IsDeleted)
+                                {
+                                    <span class="position-absolute top-2 start-2 badge bg-danger text-uppercase fw-bold shadow-sm">Deleted</span>
+                                }
+                            </div>
+                        }
+
+                        <div class="card-body p-4 d-flex flex-column">
+                            <div class="mb-2">
+                                <span class="d-block text-truncate fw-bold text-dark fs-5 clickable" @onclick="() => Copy(business.Name)" title="Click to copy name">
+                                    @business.Name
+                                </span>
+
+                                @if (columns["Accronym"])
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary fw-semibold mt-1 clickable" @onclick="() => Copy(businessController.GetAccronym(business))">
+                                        @businessController.GetAccronym(business)
+                                    </span>
+                                }
+
+                                @if (columns["Type"] && business.BusinessType != null)
+                                {
+                                    <span class="badge bg-info-subtle text-info fw-semibold mt-1 ms-1">
+                                        @business.BusinessType.Name
+                                    </span>
+                                }
+                            </div>
+
+
+                            @* Removing ID for security *@
+                            @*
                             @if (columns["Id"])
                             {
-                                <td class="clickable" @onclick="() => Copy(business.Id)">@business.Id</td>
+                                <div class="mb-2 bg-light p-2 rounded border clickable" @onclick="() => Copy(business.Id)" title="Click to copy Guid">
+                                    <code class="text-muted small ps-1" style="font-size: 0.75rem;">@business.Id</code>
+                                </div>
                             }
-                            @if (columns["Name"])
-                            {
-                                <td class="clickable" @onclick="() => Copy(business.Name)">@business.Name</td>
-                            }
-                            @if (columns["Action"])
-                            {
-                                <td>
-                                    <a class="btn btn-outline-primary me-2" role="button" href="/catalog/@currentId">
-                                        View Catalog
-                                    </a>
-                                    <a class="btn btn-outline-secondary me-2" role="button" href="/businesses/edit/@business.Id.ToString()">
-                                        Edit
-                                    </a>
-                                    @if (!business.IsDeleted)
-                                    {
-                                        <btn class="btn btn-danger" role="button" @onclick="() => Delete(business.Id)">
-                                            Delete
-                                        </btn>
-                                    }else
-                                    {
-                                        <btn class="btn btn-info" role="button" @onclick="() => Restore(business.Id)">
-                                            Restore
-                                        </btn>
-                                    }
-                                </td>
-                            }
-                            @if (columns["Accronym"])
-                            {
-                                <td class="clickable" @onclick="() => Copy(businessController.GetAccronym(business))">@businessController.GetAccronym(business)</td>
-                            }
+                            *@
+
                             @if (columns["Description"])
                             {
-                                <td class="clickable" @onclick="() => Copy(business.Description)">@business.Description</td>
+                                <p class="text-secondary small flex-grow-1 mb-3 text-break @(isExpanded ? "" : "text-truncate-3")" style="font-size: 0.875rem;">
+                                    @business.Description
+                                </p>
                             }
-                            @if (columns["Address"])
+
+                            @if (columns["Address"] && !string.IsNullOrEmpty(business.Address))
                             {
-                                <td class="clickable" @onclick="() => Copy(business.Address)">@business.Address</td>
+                                <p class="text-muted border-top pt-2 mt-auto small mb-3 clickable" @onclick="() => Copy(business.Address)" title="Click to copy Address">
+                                    <i class="bi bi-geo-alt me-1 text-danger"></i> @business.Address
+                                </p>
                             }
-                            @if (columns["Type"])
+
+                            @* Actions *@
+                            @if (columns["Action"])
                             {
-                                <td class="clickable" @onclick="() => Copy(business.BusinessType.Name)">@business.BusinessType.Name</td>
+                                <div class="d-flex gap-2 mt-auto border-top pt-3 w-100">
+                                    <a class="btn btn-sm btn-outline-primary flex-grow-1 fw-semibold" role="button" href="/catalog/@currentId">
+                                        Catalog
+                                    </a>
+                                    <a class="btn btn-sm btn-outline-secondary" role="button" href="/businesses/edit/@business.Id.ToString()" title="Edit layout configurations">
+                                        Edit
+                                    </a>
+
+                                    @if (!business.IsDeleted)
+                                    {
+                                        <button class="btn btn-sm btn-outline-danger" type="button" @onclick="() => Delete(business.Id)">
+                                            Delete
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-success" type="button" @onclick="() => Restore(business.Id)">
+                                            Restore
+                                        </button>
+                                    }
+                                </div>
                             }
-                            @if (columns["Image"])
-                            {
-                                <td>
-                                    <img src="@business.ImageURL"
-                                         class="img-thumbnail business-preview @(isExpanded ? "expanded" : "cropped")"
-                                         alt="photo"
-                                         @onclick="() => ToggleImage(currentId)">
-                                </td>
-                            }
-                        </tr>
-                    }
-                }
-            </tbody>
-        </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
     }
 </div>
 
+
 @code {
     List<Business>? businesses;
-
     Faker faker = new Faker();
 
     private float numToGen = 1;
     private Guid expandedBusinessId = Guid.Empty;
     private bool isDropdownOpen = false;
     private string searchQuery = string.Empty;
+    private bool includeDeleted = false;
 
-    private bool includeDeleted = true;
+    private Dictionary<string, bool> columns = new()
+    {
+        // { "Id", false },
+        { "Name", true },
+        { "Action", true},
+        { "Accronym", true },
+        { "Description", true },
+        { "Address", false },
+        { "Type", false },
+        { "Image", true }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Refresh();
+    }
+
+    private async Task Refresh()
+    {
+        businesses = (await businessController.GetAll(includeDeleted)).Value;
+    }
 
     private async Task GenerateBusiness()
     {
         int numBusinesses = (int)numToGen;
 
-        BusinessType btype = new()
-        {
-            Id = Guid.NewGuid(),
-            Name = "Company"
-        };
+        BusinessType btype = new() { Id = Guid.NewGuid(), Name = "Company" };
         for (int i = 0; i < numBusinesses; i++)
         {
             var business = new Business
@@ -242,21 +266,8 @@
             await BusinessRepo.AddAsync(business);
         }
         await BusinessRepo.SaveChangesAsync();
+        await Refresh(); // Keep UI in sync automatically on generation
     }
-
-
-    protected override async Task OnInitializedAsync()
-    {
-        base.OnInitialized();
-
-        await Refresh();
-    }
-
-    private async Task Refresh()
-    {
-        businesses = (await businessController.GetAll(includeDeleted)).Value;
-    }
-
 
     private void Copy(object? content)
     {
@@ -268,40 +279,11 @@
 
     private void ToggleImage(Guid id)
     {
-        if (expandedBusinessId == id)
-        {
-            expandedBusinessId = Guid.Empty; // Collapse if clicked again
-        }
-        else
-        {
-            expandedBusinessId = id; // Expand
-        }
+        expandedBusinessId = (expandedBusinessId == id) ? Guid.Empty : id;
     }
 
-
-    // display settings
-    private Dictionary<string, bool> columns = new()
-    {
-        { "Id", false },
-        { "Name", true },
-        { "Action", true},
-        { "Accronym", true },
-        { "Description", true },
-        { "Address", false },
-        { "Type", false },
-        { "Image", true }
-    };
-
-    private void ToggleDropdown()
-    {
-        isDropdownOpen = !isDropdownOpen;
-    }
-
-    private void CloseDropdown()
-    {
-        isDropdownOpen = false;
-    }
-
+    private void ToggleDropdown() => isDropdownOpen = !isDropdownOpen;
+    private void CloseDropdown() => isDropdownOpen = false;
 
     private List<Business> FilteredBusinesses
     {
