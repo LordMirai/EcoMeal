@@ -3,7 +3,7 @@ using EcoMeal.Repositories.Interfaces;
 
 namespace EcoMeal.Services;
 
-public class PackageService(IPackageRepository packageRepository) : IPackageService
+public class PackageService(IPackageRepository packageRepository, IPackageTypeRepository packageTypeRepository) : IPackageService
 {
     public async Task<List<Package>> GetAll()
     {
@@ -54,5 +54,10 @@ public class PackageService(IPackageRepository packageRepository) : IPackageServ
     public async Task<List<Package>> GetByBusinessIdAsync(Guid businessId)
     {
         return await packageRepository.GetByBusinessIdAsync(businessId);
+    }
+
+    public async Task<List<PackageType>> GetTypes()
+    {
+        return await packageTypeRepository.GetAllAsync();
     }
 }

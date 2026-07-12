@@ -6,6 +6,7 @@
 @using EcoMeal.Repositories;
 @using EcoMeal.Services;
 @using Bogus
+@using Microsoft.AspNetCore.Components.Authorization
 
 @inject BusinessRepository BusinessRepo
 @inject BusinessController businessController
@@ -19,6 +20,7 @@
         <div>
             <h1 class="fw-bold mb-1">Businesses & Restaurants</h1>
             <p class="text-muted small mb-0">Manage catalog configurations and operational listings</p>
+            <p class="text-muted small mb-1 fst-italic">Click on any text part to copy to clipboard.</p>
         </div>
         <a class="btn btn-primary shadow-sm" href="/businesses/create">
             <i class="bi bi-plus-circle me-2"></i>Register New Business
@@ -41,13 +43,17 @@
     <div class="card shadow-sm border-0 mb-4 bg-light">
         <div class="card-body p-3">
             <div class="row g-3 align-items-center">
-                <div class="col-md-4">
-                    <div class="input-group">
-                        <button type="button" class="btn btn-outline-secondary" @onclick="GenerateBusiness" title="(Clientside Only!)">Generate</button>
-                        <input type="number" class="form-control" placeholder="Qty" @bind="numToGen" style="max-width: 80px;" />
-                        <span class="input-group-text small text-muted">Faker Data</span>
-                    </div>
-                </div>
+                <AuthorizeView Roles="admin">
+                    <Authorized>
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <button type="button" class="btn btn-outline-secondary" @onclick="GenerateBusiness" title="(Clientside Only!)">Generate</button>
+                                <input type="number" class="form-control" placeholder="Qty" @bind="numToGen" style="max-width: 80px;" />
+                                <span class="input-group-text small text-muted">Faker Data</span>
+                            </div>
+                        </div>
+                    </Authorized>
+                </AuthorizeView>
 
                 @* Query Filtering *@
                 <div class="col-md-4">
@@ -188,22 +194,26 @@
                                     <a class="btn btn-sm btn-outline-primary flex-grow-1 fw-semibold" role="button" href="/catalog/@currentId">
                                         Catalog
                                     </a>
-                                    <a class="btn btn-sm btn-outline-secondary" role="button" href="/businesses/edit/@business.Id.ToString()" title="Edit layout configurations">
-                                        Edit
-                                    </a>
+                                    <AuthorizeView Roles="admin">
+                                        <Authorized>
+                                            <a class="btn btn-sm btn-outline-secondary" role="button" href="/businesses/edit/@business.Id.ToString()" title="Edit layout configurations">
+                                                Edit
+                                            </a>
 
-                                    @if (!business.IsDeleted)
-                                    {
-                                        <button class="btn btn-sm btn-outline-danger" type="button" @onclick="() => Delete(business.Id)">
-                                            Delete
-                                        </button>
-                                    }
-                                    else
-                                    {
-                                        <button class="btn btn-sm btn-success" type="button" @onclick="() => Restore(business.Id)">
-                                            Restore
-                                        </button>
-                                    }
+                                            @if (!business.IsDeleted)
+                                            {
+                                                <button class="btn btn-sm btn-outline-danger" type="button" @onclick="() => Delete(business.Id)">
+                                                    Delete
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-sm btn-success" type="button" @onclick="() => Restore(business.Id)">
+                                                    Restore
+                                                </button>
+                                            }
+                                        </Authorized>
+                                    </AuthorizeView>
                                 </div>
                             }
                         </div>
@@ -260,7 +270,7 @@
                 Name = faker.Company.CompanyName(),
                 Description = faker.Company.CatchPhrase(),
                 Address = faker.Address.FullAddress(),
-                ImageURL = faker.Image.PicsumUrl(640, 480, true),
+                ImageURL = faker.Image.PicsumUrl(640, 480),
                 BusinessType = btype
             };
             await BusinessRepo.AddAsync(business);

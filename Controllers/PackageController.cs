@@ -45,4 +45,14 @@ public class PackageController(IPackageService packageService) : ControllerBase
         await packageService.UpdateAsync(package);
         return NoContent();
     }
+
+    public async Task DeleteAsync(Guid id)
+    {
+        await packageService.DeleteAsync(id);
+    }
+
+    public async Task<List<PackageType>> GetTypesAsync()
+    {
+        return await packageService.GetTypes();
+    }
 }

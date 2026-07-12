@@ -10,4 +10,6 @@ public interface IPackageService
     public Task<Package?> GetByIdAsync(Guid id);
     public Task<Package?> GetByNameAsync(string name);
     public Task<List<Package>> GetByBusinessIdAsync(Guid businessId);
+    public Task<List<PackageType>> GetTypes();
+    public Task DeleteAsync(Guid id);
 }

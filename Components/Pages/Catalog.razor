@@ -1,18 +1,25 @@
 ﻿@page "/catalog/{id}"
+@rendermode InteractiveServer
 
 @using EcoMeal.Entities;
 @using EcoMeal.Controllers;
-
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Mvc;
+@using Bogus
+
 
 @inject BusinessController businessController
 @inject PackageController packageController
+
+
 
 <PageTitle>Catalog @(error ? "- Error" : "")</PageTitle>
 
 <h3>@headName</h3>
 <hr />
 
+@* CUE REDESIGN :D *@
+@*
 @if (error)
 {
     <div class="alert alert-danger">
@@ -22,7 +29,30 @@
     </div>
     return;
 }
+*@
 
+@if (error)
+{
+    <div class="container mt-5" style="max-width: 600px;">
+        <div class="card shadow-sm border-0 border-start border-danger border-4">
+            <div class="card-body p-4 text-center">
+                <i class="bi bi-exclamation-octagon fs-1 text-danger mb-2"></i>
+                <h4 class="fw-bold text-dark">Catalog Error</h4>
+
+                <p class="text-secondary small" title="Bad ID">
+                    The requested Business ID <code class="bg-light p-1 rounded">@id</code> is malformed or business could not be found.
+                </p>
+                <a href="/businesses" class="btn btn-outline-secondary btn-sm px-4">
+                    <i class="bi bi-arrow-left me-2"></i>Return to Business list
+                </a>
+            </div>
+        </div>
+    </div>
+    return;
+}
+
+
+@*
 @if (currentBusiness != null)
 {
     <div class="container-sm">
@@ -41,7 +71,6 @@
 
             @if ((packages?.Count ?? 0) > 0)
             {
-                @* Todo: make these pretty with cards *@
                 <table class="table table-bordered table-hover mt-3">
                     <thead>
                         <tr class="table-dark">
@@ -76,6 +105,199 @@
             }
      </div>
 }
+*@
+
+
+@* Admin control for bogus gen *@
+<AuthorizeView Roles="admin">
+    <Authorized>
+        <div class="card shadow-sm border-0 mb-4 rounded-3 admin-generator-bar">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-lock-fill text-warning fs-5"></i>
+                    <div>
+                        <span class="fw-bold text-dark fs-5">Administrative Tools</span>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <div class="d-flex align-items-center gap-2 border-end pe-3 me-2">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white text-secondary small">Quantity</span>
+                            <input type="number" class="form-control qty-input-width" min="1" max="100" @bind="packagesToGen" />
+                        </div>
+                        <button type="button" role="button" class="btn btn-sm btn-warning fw-semibold px-2 text-dark shadow-sm" @onclick="GenerateMockPackages">
+                            Generate
+                        </button>
+                    </div>
+
+                    <button type="button" role="button" class="btn btn-sm btn-outline-danger fw-semibold px-3" @onclick="WipeAllPackages">
+                        <i class="bi bi-trash3-fill me-1"></i> Purge Catalog
+                    </button>
+                </div>
+            </div>
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+
+
+@if (currentBusiness != null)
+{
+    <div class="container mt-4">
+        @* Apparently, this is called "Split Hero Header Banner" *@
+        <div class="card shadow-sm border-0 rounded-3 overflow-hidden mb-4 bg-light">
+            <div class="row g-0 align-items-center">
+                <div class="col-sm-4 col-md-3 text-center p-3 bg-white border-end">
+                    <img src="@currentBusiness.ImageURL"
+                         class="rounded-3 shadow-sm object-fit-cover w-100"
+                         style="max-height: 180px; aspect-ratio: 1/1;"
+                         alt="@currentBusiness.Name Profile" />
+                </div>
+                <div class="col-sm-8 col-md-9 p-4">
+                    <span class="text-uppercase tracking-wider text-primary fw-bold small d-block mb-1">Catalog Registry</span>
+                    <h1 class="fw-bold text-dark h2 mb-2">@currentBusiness.Name</h1>
+                    <p class="text-muted small mb-3">
+                        <i class="bi bi-box-seam me-1 text-secondary"></i> Managing <span class="fw-semibold text-dark">@(packages?.Count ?? 0)</span> active package listings.
+                    </p>
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-primary fw-semibold btn-sm shadow-sm px-3" href="/create-package/@BusinessID">
+                            <i class="bi bi-plus-lg me-2"></i>Create New Package
+                        </a>
+                        <a class="btn btn-outline-secondary btn-sm px-3" href="/businesses">
+                            <i class="bi bi-arrow-left me-1"></i>Back to List
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* Search box and filter by categ *@
+        <div class="row g-2 mb-4">
+            <div class="col-md-8">
+                <div class="input-group">
+                    <span class="input-group-text bg-white text-secondary border-end-0">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control border-start-0 ps-0"
+                           placeholder="Search packages by Name or ID"
+                           @bind="searchQuery" @bind:event="oninput" />
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <select class="form-select" @bind="selectedTypeId">
+                    <option value="">All Categories</option>
+                    @if (packageTypes != null)
+                    {
+                        @foreach (var type in packageTypes)
+                        {
+                            <option value="@type.Id.ToString()">@type.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+
+
+        @if ((packages?.Count ?? 0) == 0)
+        {
+            <div class="card border-0 shadow-sm p-5 text-center bg-white rounded-3">
+                <div class="py-4">
+                    <i class="bi bi-inbox-fill text-muted fs-1 mb-3 d-block"></i>
+                    <h5 class="fw-bold text-dark">Empty Inventory</h5>
+                    <p class="text-secondary small mx-auto" style="max-width: 400px;">
+                        This business hasn't published any items to their catalog yet. Use the action panel above to configure a package.
+                    </p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                @foreach (Package pkg in FilteredPackages)
+                {
+                    var isOutOfStock = pkg.Quantity <= 0;
+                    var isLowStock = pkg.Quantity > 0 && pkg.Quantity <= 5;
+
+                    <div class="col">
+                        <div class="card h-100 shadow-sm border-0 rounded-3 overflow-hidden position-relative transition-hover @(isOutOfStock ? "opacity-75 bg-light" : "")">
+                            <div class="position-relative bg-secondary-subtle" style="height: 200px;">
+                                <img src="@pkg.ImageURL"
+                                     class="w-100 h-100 object-fit-cover @(isOutOfStock ? "grayscale-filter" : "")"
+                                     alt="@pkg.Name Picture" />
+
+                                @if (isOutOfStock)
+                                {
+                                    <div class="position-absolute inset-0 bg-dark bg-opacity-50 d-flex align-items-center justify-content-center">
+                                        <span class="badge bg-danger text-uppercase fw-bold px-3 py-2 fs-6 shadow">Sold Out</span>
+                                    </div>
+                                }
+                                else if (isLowStock)
+                                {
+                                    <span class="position-absolute badge bg-warning text-dark fw-bold shadow-sm" style="top: 10px; right: 10px; z-index: 10;">
+                                        Only @pkg.Quantity Left!
+                                    </span>
+                                }
+                            </div>
+
+                            <div class="card-body p-4 d-flex flex-column">
+                                @if (pkg.PackageType != null)
+                                {
+                                    <div class="mb-2">
+                                        <span class="badge badge-outline-category text-uppercase tracking-wider">
+                                            @pkg.PackageType.Name
+                                        </span>
+                                    </div>
+                                }
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h4 class="card-title fw-bold text-dark fs-5 mb-0 text-truncate" title="@pkg.Name">
+                                        @pkg.Name
+                                    </h4>
+                                    <span class="fs-5 fw-bold text-success ps-2">
+                                        $@pkg.Price.ToString("F2")
+                                    </span>
+                                </div>
+
+                                <p class="text-secondary small mb-4 text-truncate-3 flex-grow-1" style="font-size: 0.875rem; line-height: 1.5;">
+                                    @pkg.Description
+                                </p>
+
+                                <div class="d-flex justify-content-between align-items-center border-top pt-3 mt-auto w-100">
+                                    <span class="small text-muted">
+                                        <i class="bi bi-stack me-1"></i> Stock:
+                                        <span class="fw-semibold @(isOutOfStock ? "text-danger" : "text-dark")">@pkg.Quantity pcs</span>
+                                    </span>
+
+                                    <div class="d-flex gap-2">
+                                        @* Order layout will go here someday. *@
+                                        <button class="btn btn-sm btn-outline-primary fw-semibold px-3" disabled="@isOutOfStock">
+                                            <i class="bi bi-cart-plus"></i>
+                                        </button>
+
+                                        <a href="/create-package/edit/@pkg.Id" class="btn btn-sm btn-warning text-dark fw-medium px-3" role="button" title="Modify Package Metadata">
+                                            Edit <i class="bi bi-pencil-square ms-1"></i>
+                                        </a>
+
+                                        <AuthorizeView Roles="admin">
+                                            <Authorized>
+                                                <button type="button" role="button" class="btn btn-sm btn-danger px-3 transition-danger-btn"
+                                                        @onclick="() => DeletePackage(pkg)" title="Permanently Delete Package">
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+                                            </Authorized>
+                                        </AuthorizeView>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
 
 
 
@@ -86,13 +308,43 @@
 
     private Business? currentBusiness;
 
-    bool error = false;
-    string headName => error ? "Catalog - Error" : $"Catalog for {currentBusiness?.Name}";
+    private Guid? selectedTypeId;
+    private string searchQuery = string.Empty;
 
+    bool error = false;
+    string headName => error ? "Catalog - Error - Bad ID" : $"Catalog for {currentBusiness?.Name}";
+
+    private List<PackageType>? packageTypes = new();
     private List<Package>? packages = new();
+    private List<Package>? FilteredPackages
+    {
+        get
+        {
+            if (packages == null) return new List<Package>();
+
+            var result = packages.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(searchQuery))
+            {
+                result = result.Where(p =>
+                    p.Name.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                    p.Id.ToString().Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedTypeId.ToString()))
+            {
+                result = result.Where(p => p.PackageType != null && p.PackageType.Id.ToString() == selectedTypeId.ToString());
+            }
+
+            return result.ToList();
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
+        packageTypes = await packageController.GetTypesAsync();
+
+
         try
         {
             BusinessID = Guid.Parse(id);
@@ -103,7 +355,7 @@
             return;
         }
 
-        Console.WriteLine($"Catalog ID: {BusinessID}");
+        // Console.WriteLine($"Catalog ID: {BusinessID}");
 
         ActionResult<Business?> result = await businessController.GetById(BusinessID);
         if (result.Result is NotFoundResult)
@@ -115,6 +367,73 @@
 
         currentBusiness = result.Value;
 
+        ActionResult<List<Package>> packageResult = await packageController.GetByBusinessIdAsync(BusinessID);
+        packages = packageResult.Value;
+    }
+}
+
+
+@* Bogus pkg gen *@
+@code {
+    private int packagesToGen = 5;
+
+    private async Task GenerateMockPackages()
+    {
+        // Console.WriteLine("Func is called!!!");
+        if (packagesToGen <= 0) return;
+        var faker = new Faker();
+
+        // Console.WriteLine($"Bogus is generating {packagesToGen} packages...");
+
+        for (int i = 0; i < packagesToGen; i++)
+        {
+            var mockPackage = new Package
+                {
+                    Id = Guid.NewGuid(),
+                    Name = $"{faker.Commerce.ProductAdjective()} {faker.Commerce.ProductName()}",
+                    Description = faker.Commerce.ProductDescription(),
+                    Price = float.Parse(faker.Commerce.Price(min: 5, max: 45, decimals: 2)),
+                    Quantity = faker.Random.Int(min: 1, max: 25),
+                    ImageURL = faker.Image.PicsumUrl(640, 480, false),
+                    Business = currentBusiness,
+                    PackageType = faker.PickRandom(packageTypes)
+                };
+
+            // Console.WriteLine($"Package: {mockPackage.Name}, Price: {mockPackage.Price}, Quantity: {mockPackage.Quantity}");
+            await packageController.AddAsync(mockPackage);
+        }
+
+        ActionResult<List<Package>> packageResult = await packageController.GetByBusinessIdAsync(BusinessID);
+        packages = packageResult.Value;
+    }
+
+
+
+    private async Task WipeAllPackages()
+    {
+        if (packages == null || !packages.Any())
+        {
+            return;
+        }
+
+        var totalToPurge = packages.Count;
+
+        foreach (var pkg in packages)
+        {
+            await packageController.DeleteAsync(pkg.Id);
+        }
+
+        ActionResult<List<Package>> packageResult = await packageController.GetByBusinessIdAsync(BusinessID);
+        packages = packageResult.Value;
+    }
+
+    private async Task DeletePackage(Package pkg)
+    {
+        if (pkg == null)
+        {
+            return;
+        }
+        await packageController.DeleteAsync(pkg.Id);
         ActionResult<List<Package>> packageResult = await packageController.GetByBusinessIdAsync(BusinessID);
         packages = packageResult.Value;
     }

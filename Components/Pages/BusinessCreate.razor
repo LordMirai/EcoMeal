@@ -144,29 +144,38 @@ else
 
         Console.WriteLine($"BusinessID: {BusinessId}");
 
-        try
+        if (!string.IsNullOrEmpty(BusinessId))
         {
-            id = Guid.Parse(BusinessId);
-        }
-        catch (FormatException)
+            try
+            {
+                id = Guid.Parse(BusinessId);
+            }
+            catch (FormatException)
+            {
+                Console.WriteLine("Invalid BusinessID format.");
+                NavigationManager.NavigateTo("/businesses");
+                return;
+            }
+
+            var result = await BusinessController.GetById(id);
+            existingBusiness = result.Value;
+
+            if (existingBusiness != null)
+            {
+                model.Name = existingBusiness.Name;
+                model.Description = existingBusiness.Description;
+                model.Address = existingBusiness.Address;
+                model.ImageURL = existingBusiness.ImageURL;
+                model.BusinessTypeId = existingBusiness.BusinessType?.Id.ToString();
+
+                isEditMode = true;
+            }
+        } else
         {
-            Console.WriteLine("Invalid BusinessID format.");
-            NavigationManager.NavigateTo("/businesses");
-            return;
-        }
-
-        var result = await BusinessController.GetById(id);
-        existingBusiness = result.Value;
-
-        if (existingBusiness != null)
-        {
-            model.Name = existingBusiness.Name;
-            model.Description = existingBusiness.Description;
-            model.Address = existingBusiness.Address;
-            model.ImageURL = existingBusiness.ImageURL;
-            model.BusinessTypeId = existingBusiness.BusinessType?.Id.ToString();
-
-            isEditMode = true;
+            isEditMode = false;
+            existingBusiness = null;
+            model = new BusinessFormModel(); // Reset the model jic
+            previewUrl = null;
         }
     }
 

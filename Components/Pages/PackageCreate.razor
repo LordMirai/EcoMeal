@@ -32,20 +32,16 @@
     <div class="card shadow-sm border-0 rounded-3">
         <div class="card-body p-4">
             <EditForm Model="@model" FormName="CreatePackageForm" OnSubmit="Submit" @key="(isEditMode ? existingId : id)">
-
-                <!-- Package Name -->
                 <div class="mb-3">
                     <label for="Name" class="form-label fw-semibold small text-secondary">Package Name</label>
                     <InputText id="Name" class="form-control" @bind-Value="model.Name" placeholder="Example: Power Drill Set" required />
                 </div>
 
-                <!-- Description -->
                 <div class="mb-3">
                     <label for="Description" class="form-label fw-semibold small text-secondary">Description</label>
                     <InputText id="Description" class="form-control" @bind-Value="model.Description" placeholder="Example: A set containing five power tools." required />
                 </div>
 
-                <!-- Price and Quantity Row -->
                 <div class="row g-3 mb-3">
                     <div class="col-sm-6">
                         <label for="Price" class="form-label fw-semibold small text-secondary">Price</label>
@@ -61,13 +57,11 @@
                     </div>
                 </div>
 
-                <!-- Image URL -->
                 <div class="mb-3">
                     <label for="ImageURL" class="form-label fw-semibold small text-secondary">Image URL</label>
                     <InputText id="ImageURL" class="form-control" @bind-Value="model.ImageURL" placeholder="Example: https://example.com/image.png" required />
                 </div>
 
-                <!-- Package Type -->
                 <div class="mb-4">
                     <label for="PkgType" class="form-label fw-semibold small text-secondary">Package Type</label>
                     <InputSelect id="PkgType" class="form-select" @bind-Value="model.PackageTypeId" required>
@@ -79,7 +73,7 @@
                     </InputSelect>
                 </div>
 
-                <!-- Actions -->
+
                 <div class="d-flex justify-content-end gap-2 border-top pt-3">
                     <a href="/catalog/@currentBusiness?.Id" class="btn btn-outline-secondary px-4">Cancel</a>
                     <button type="submit" id="btnSubmitPackage" class="btn btn-primary px-4 fw-semibold">
@@ -141,9 +135,8 @@
                 return;
             }
 
-            // Map data from existing domain entity into the local page model
             model.Name = existingPackage.Name;
-            model.Description = existingPackage.Description ?? string.Empty; // Fail-safe snapshot fallback
+            model.Description = existingPackage.Description ?? string.Empty;
             model.Price = existingPackage.Price;
             model.Quantity = (int)existingPackage.Quantity;
             model.ImageURL = existingPackage.ImageURL;
@@ -185,6 +178,7 @@
     {
         var result = await pkgTypeRepo.GetAllAsync();
         packageTypes = result.ToList();
+        packageTypes.Sort((x, y) => string.Compare(x.Name, y.Name, StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task Submit()
@@ -194,7 +188,6 @@
             return;
         }
 
-        // Resolve selected package type
         PackageType? pkgType = null;
         if (Guid.TryParse(model.PackageTypeId, out var parsedTypeId))
         {
@@ -203,7 +196,6 @@
 
         if (isEditMode && existingPackage != null)
         {
-            // Update the loaded domain tracking object directly in-situ
             existingPackage.Name = model.Name;
             existingPackage.Description = model.Description;
             existingPackage.Price = model.Price;
@@ -216,11 +208,10 @@
         }
         else
         {
-            // Instantiate brand new object
             Package pkg = new Package
             {
                 Name = model.Name,
-                Description = model.Description, // Guaranteed non-null by form model initialization
+                Description = model.Description,
                 Price = model.Price,
                 Quantity = model.Quantity,
                 ImageURL = model.ImageURL,
@@ -238,8 +229,6 @@
     private class PackageFormModel
     {
         public string Name { get; set; } = string.Empty;
-
-        // Changed to guaranteed string.Empty instantiation to block EF Core SQL NULL crashes
         public string Description { get; set; } = string.Empty;
         public float Price { get; set; }
         public int Quantity { get; set; }
