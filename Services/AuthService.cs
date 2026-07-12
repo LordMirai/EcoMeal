@@ -1,4 +1,5 @@
-﻿using EcoMeal.Controllers;
+﻿using EcoMeal.Constants;
+using EcoMeal.Controllers;
 using EcoMeal.Entities;
 using EcoMeal.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -49,6 +50,7 @@ public class AuthService(SignInManager<ApplicationUser> signInManager, UserManag
         var result = await userManager.CreateAsync(newUser, registerRequest.Password);
         if (result.Succeeded)
         {
+            await userManager.AddToRoleAsync(newUser, AppRoles.User);
             await signInManager.SignInAsync(newUser, isPersistent: false);
         }
 

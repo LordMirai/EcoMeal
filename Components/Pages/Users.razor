@@ -1,80 +1,234 @@
 ﻿@page "/users"
+@rendermode InteractiveServer
 
 @using Microsoft.AspNetCore.Authorization;
 @using EcoMeal.Constants;
 @using EcoMeal.Entities;
-@using EcoMeal.Controllers;
+@using Microsoft.AspNetCore.Components.Authorization;
+@using Microsoft.AspNetCore.Identity;
+@using EcoMeal.Services;
+@using Microsoft.EntityFrameworkCore;
+
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject UserContext userContext
 
 @attribute [Authorize(Roles = AppRoles.Admin)]
 
+<PageTitle>Identity Directory</PageTitle>
 
-<PageTitle>Users</PageTitle>
-
-<h1>Users</h1>
-<hr />
-
-<div class="container-sm">
-    Ok so current user...<br />
+<div class="container mt-4">
+    <div class="card shadow-sm border-0 mb-4 rounded-3 text-white bg-dark">
+        <div class="card-body p-4">
+            <h2 class="h4 fw-bold mb-1 text-primary">Local User Information</h2>
+            <p class="text-muted small mb-0">
+                Core database metadata overview for currently authenticated administrator operations.
+            </p>
+        </div>
+    </div>
 
     @if (currUser == null)
     {
-        <p>Currently null</p>
+        <div class="text-center py-5 bg-white rounded-3 shadow-sm">
+            <div class="spinner-border text-primary mb-2" role="status"></div>
+            <p class="text-secondary small tracking-wider">Loading...</p>
+        </div>
     }
     else
     {
-        <p>
-            <ul>
-                <li>Name: @currUser.FullName</li>
-                @* <li>ID:  @currUser.Role</li> *@
-            </ul>
-        </p>
+        <div class="card shadow-sm border-0 rounded-3 bg-white mb-4">
+            <div class="card-header bg-transparent border-0 pt-4 px-4">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="profile-avatar-placeholder d-flex align-items-center justify-content-center text-primary fw-bold fs-4 shadow-sm">
+                        @currUser.FullName?[0].ToString().ToUpper()
+                    </div>
+                    <div>
+                        <h3 class="h5 fw-bold text-dark mb-0">@currUser.FullName</h3>
+                        <span class="badge bg-primary-subtle text-primary text-uppercase tracking-wider mt-1" style="font-size: 0.65rem;">
+                            System Roles:
+                            @foreach (var role in roles)
+                            {
+                                <span>@role </span>
+                            }
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body px-4 pb-4">
+                <hr class="text-muted opacity-25 my-3" />
+
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <span class="d-block text-muted small fw-semibold text-uppercase tracking-wider">Account Identifier</span>
+                        <code class="text-dark bg-light px-2 py-1 rounded small border d-inline-block mt-1 text-break">@currUser.Id</code>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="d-block text-muted small fw-semibold text-uppercase tracking-wider">Email Address</span>
+                        <span class="text-dark d-block mt-1 fw-medium">@currUser.Email</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="d-block text-muted small fw-semibold text-uppercase tracking-wider">Username Reference</span>
+                        <span class="text-secondary d-block mt-1 font-monospace">@currUser.UserName</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="d-block text-muted small fw-semibold text-uppercase tracking-wider">Security Stamp</span>
+                        <span class="text-secondary small font-monospace d-block mt-1 text-truncate" title="@currUser.SecurityStamp">@currUser.SecurityStamp</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     }
 
-    <div>
-        <AuthorizeView>
-            <Authorized>
-                <p>You are logged in! Welcome, @context.User.Identity?.Name. Full name: @context.User.FindFirst("FullName")?.Value
-                    @(context.User.IsInRole(AppRoles.Admin) ? "You are an admin." : "You are not an admin.")
-                    @* I AM FUCKING FUMING RIGHT NOW. WHAT THE FUCK IS THIS? WHY DID I WASTE SO MUCH TIME ON DOING IT MANUALLY? *@
-                </p>
-            </Authorized>
-            <NotAuthorized>
-                <p>You are a guest.</p>
-            </NotAuthorized>
-        </AuthorizeView>
-    </div>
+    <hr class="my-4" />
+
+    <h3 class="h4 fw-bold text-dark mb-3">All Registered Users</h3>
+
+    @if (allUsers == null)
+    {
+        <p class="text-muted small">Loading user list directory...</p>
+    }
+    else if (!allUsers.Any())
+    {
+        <p class="text-warning small">No records found in database registry.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle bg-white shadow-sm rounded-3 overflow-hidden">
+                <thead>
+                    <tr class="table-secondary text-secondary small text-uppercase">
+                        <th>Full Name</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Assigned Roles</th>
+                        <th class="text-center" style="width: 260px;">Management Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (userDirectoryList != null)
+                    {
+                        @foreach (var entry in userDirectoryList)
+                        {
+                            <tr>
+                                <td class="fw-bold @(entry.IsAdmin ? "text-danger" : (entry.AssignedRoles.Contains(AppRoles.Manager) ? "text-primary" :"text-dark"))">
+                                    @if (entry.IsAdmin)
+                                    {
+                                        <i class="bi bi-shield-fill-check me-1 small"></i>
+                                    }
+                                    @entry.User.FullName
+                                </td>
+                                <td class="font-monospace text-secondary small">@entry.User.UserName</td>
+                                <td>@entry.User.Email</td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @foreach (var role in entry.AssignedRoles)
+                                        {
+                                            <span class="badge @(role == AppRoles.Admin ? "bg-danger" : "bg-secondary") small">
+                                                @role
+                                            </span>
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2 justify-content-center">
+                                        <select class="form-select form-select-sm"
+                                                value="@(entry.AssignedRoles.FirstOrDefault() ?? "")"
+                                                @onchange="(e) => UpdateUserRole(entry.User, e.Value?.ToString())">
+                                            <option value="" disabled>-- Alter Role --</option>
+                                            @foreach (string role in AppRoles.AllRoles)
+                                            {
+                                                <option value="@role" selected="@(entry.AssignedRoles.Contains(role))">@role</option>
+                                            }
+                                        </select>
+
+                                        <button type="button" role="button" class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => DeleteSystemUser(entry.User)"
+                                                disabled="@(entry.User.Id == currUser?.Id)"
+                                                title="@(entry.User.Id == currUser?.Id ? "Cannot delete your own active session" : "Purge User Record")">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>
 
-
-
-@using Microsoft.AspNetCore.Components.Authorization;
-@using Microsoft.AspNetCore.Identity;
-@inject AuthenticationStateProvider AuthStateProvider
-@inject UserManager<ApplicationUser> UserManager
-
 @code {
+    private ApplicationUser? currUser;
+    private IList<string> roles = new List<string>();
+    private List<ApplicationUser>? allUsers;
 
-    ApplicationUser currUser;
+    private List<UserDirectoryRow> userDirectoryList = new();
+
+    private class UserDirectoryRow
+    {
+        public ApplicationUser User { get; set; } = null!;
+        public IList<string> AssignedRoles { get; set; } = new List<string>();
+        public bool IsAdmin { get; set; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var userPrincipal = authState.User;
-        
-        string userId = "???";
-
-        if (userPrincipal.Identity is { IsAuthenticated: true })
+        currUser = await userContext.GetLocalUserAsync();
+        if (currUser != null)
         {
-            userId = UserManager.GetUserId(userPrincipal) ?? "[nil]";
-
-            if (userId != "[nil]")
-            {
-                currUser = await UserManager.FindByIdAsync(userId);
-            }
+            roles = await UserManager.GetRolesAsync(currUser);
         }
-        else
+
+        allUsers = await UserManager.Users
+            .OrderBy(u => u.FullName)
+            .ToListAsync();
+
+        await RefreshUserDirectory();
+    }
+
+    private async Task RefreshUserDirectory()
+    {
+        var users = await UserManager.Users.OrderBy(u => u.FullName).ToListAsync();
+        var tempDirectory = new List<UserDirectoryRow>();
+
+        foreach (var user in users)
         {
-            userId = "[Unauthenticated Guest]";
+            var userRoles = await UserManager.GetRolesAsync(user);
+            tempDirectory.Add(new UserDirectoryRow
+            {
+                User = user,
+                AssignedRoles = userRoles,
+                IsAdmin = userRoles.Contains(AppRoles.Admin)
+            });
+        }
+
+        userDirectoryList = tempDirectory;
+    }
+
+    private async Task UpdateUserRole(ApplicationUser user, string? targetRole)
+    {
+        if (user == null || string.IsNullOrWhiteSpace(targetRole)) return;
+        var currentRoles = await UserManager.GetRolesAsync(user);
+        var removeResult = await UserManager.RemoveFromRolesAsync(user, currentRoles);
+
+        await UserManager.AddToRoleAsync(user, targetRole);
+        await RefreshUserDirectory();
+    }
+
+    private async Task DeleteSystemUser(ApplicationUser user)
+    {
+        if (user == null) return;
+        if (user.Id == currUser?.Id)
+        {
+            return;
+        }
+
+        var result = await UserManager.DeleteAsync(user);
+        if (result.Succeeded)
+        {
+            await RefreshUserDirectory();
         }
     }
 }

@@ -1,0 +1,7 @@
+.profile-avatar-placeholder {
+    width: 56px;
+    height: 56px;
+    background-color: var(--bs-primary-bg-subtle, #e9ecef);
+    border: 2px solid #fff;
+    border-radius: 50%;
+}
