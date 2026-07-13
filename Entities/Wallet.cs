@@ -9,4 +9,5 @@ public class Wallet
     [ForeignKey("UserId")]
     public required ApplicationUser User { get; set; }
     public decimal Balance { get; set; } = 0;
+    public bool IsDeleted { get; set; } = false;
 }

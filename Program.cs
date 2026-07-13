@@ -29,6 +29,8 @@ builder.Services.AddScoped<PackageTypeRepository>();
 builder.Services.AddScoped<BusinessTypeRepository>();
 builder.Services.AddScoped<BusinessTypeService>();
 builder.Services.AddScoped<UtilityService>();
+builder.Services.AddScoped<WalletRepository>();
+builder.Services.AddScoped<WalletService>();
 
 builder.Services.AddScoped<IBusinessRepository, BusinessRepository>();
 builder.Services.AddScoped<IBusinessService, BusinessService>();
@@ -38,9 +40,12 @@ builder.Services.AddScoped<IBusinessTypeService, BusinessTypeService>();
 
 builder.Services.AddScoped<IPackageRepository, PackageRepository>();
 builder.Services.AddScoped<IPackageService, PackageService>();
+builder.Services.AddScoped<IPackageTypeRepository,  PackageTypeRepository>();
+
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-builder.Services.AddScoped<IPackageTypeRepository,  PackageTypeRepository>();
+builder.Services.AddScoped<IWalletRepository, WalletRepository>();
+builder.Services.AddScoped<IWalletService, WalletService>();
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7023") }); // Use your actual local port
 

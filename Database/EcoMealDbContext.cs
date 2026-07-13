@@ -13,13 +13,15 @@ namespace EcoMeal.Database
         {
             context = this;
         }
-        public DbSet<Order> Orders { get; set; }
-        public DbSet<BusinessType> BusinessTypes { get; set; }
         public DbSet<Business> Businesses { get; set; }
-        public DbSet<PackageType> PackageTypes { get; set; }
-        public DbSet<Package> Packages { get; set; }
-        public DbSet<OrderStatus> OrderStatuses { get; set; }
+        public DbSet<BusinessType> BusinessTypes { get; set; }
+        public DbSet<Order> Orders { get; set; }
         public DbSet<OrderEntry> OrderEntries { get; set; }
+        public DbSet<OrderStatus> OrderStatuses { get; set; }
+        public DbSet<Package> Packages { get; set; }
+        public DbSet<PackageType> PackageTypes { get; set; }
+        public DbSet<Wallet> Wallets { get; set; }
+        public DbSet<WalletTransaction> WalletTransactions { get; set; }
 
     }
 }
