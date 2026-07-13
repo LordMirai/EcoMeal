@@ -45,4 +45,22 @@ public class WalletService(IWalletRepository walletRepository) : IWalletService
     {
         await walletRepository.SaveChangesAsync();
     }
+
+    public async Task<bool> UserCanAfford(ApplicationUser user, decimal amount)
+    {
+        Guid id;
+        try
+        {
+            id = Guid.Parse(user.Id);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+
+        var wallet = await GetUserWallet(id);
+        if (wallet == null)
+            return false;
+        return wallet.Balance >= amount;
+    }
 }

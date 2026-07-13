@@ -28,9 +28,14 @@ public class BusinessRepository(EcoMealDbContext context) : IBusinessRepository
         // todo
     }
 
-    public async Task<Business?> GetByIdAsync(Guid id)
+    public async Task<Business?> GetByIdAsync(Guid id, bool includeDeleted = false)
     {
-        return await context.Businesses.FindAsync(id);
+        var query = context.Businesses.AsQueryable();
+        if (!includeDeleted)
+        {
+            query = query.Where(b => !b.IsDeleted);
+        }
+        return await query.Include(b => b.BusinessType).FirstOrDefaultAsync(b => b.Id == id);
     }
 
     public async Task DeleteAsync(Business business)

@@ -1,11 +1,11 @@
 ﻿using EcoMeal.Database;
 using EcoMeal.Entities;
-
+using EcoMeal.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace EcoMeal.Repositories;
 
-public class OrderEntryRepository(EcoMealDbContext context)
+public class OrderEntryRepository(EcoMealDbContext context): IOrderEntryRepository
 {
     public async Task<List<OrderEntry>> GetAllAsync()
     {

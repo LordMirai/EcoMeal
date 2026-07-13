@@ -30,9 +30,9 @@ public class BusinessService(IBusinessRepository businessRepository) : IBusiness
         await businessRepository.SaveChangesAsync();
     }
 
-    public async Task<Business?> GetById(Guid id)
+    public async Task<Business?> GetById(Guid id, bool includeDeleted = false)
     {
-        return await businessRepository.GetByIdAsync(id);
+        return await businessRepository.GetByIdAsync(id, includeDeleted = false);
     }
 
     public async Task UpdateAsync(Business business)

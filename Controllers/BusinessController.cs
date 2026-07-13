@@ -14,9 +14,9 @@ public class BusinessController(IBusinessService businessService, IBusinessTypeS
         return await businessService.GetAll(includeDeleted);
     }
 
-    public async Task<ActionResult<Business?>> GetById(Guid id)
+    public async Task<ActionResult<Business?>> GetById(Guid id, bool includeDeleted=false)
     {
-        var business = await businessService.GetById(id);
+        var business = await businessService.GetById(id, includeDeleted);
         if (business == null)
         {
             return NotFound();

@@ -1,0 +1,53 @@
+﻿@page "/cart"
+@rendermode InteractiveServer
+
+@using Microsoft.AspNetCore.Authorization;
+@using EcoMeal.Services;
+@using EcoMeal.Controllers;
+
+@inject UserContext userContext
+@inject OrderController orderController
+
+
+@attribute [Authorize]
+
+<PageTitle>Cart</PageTitle>
+
+<h1>Cart</h1>
+<hr />
+
+@if (pendingOrders is null)
+{
+    <p>Loading</p>
+
+}
+else
+{
+
+
+
+    <div class="container" style="max-width:600px;">
+        <p class="fs-4 text-secondary">
+            You have @pendingOrders.Count pending orders in your cart.
+        </p>
+    </div>
+}
+
+@code {
+    private ApplicationUser? user;
+
+    private List<Order>? pendingOrders;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine("\n\n\n WE ARE INIT THE CART \n\n\n");
+        user = await userContext.GetLocalUserAsync();
+        if (user is null)
+            return;
+
+        Console.WriteLine("\n\n WE GOT THE USER \n\n");
+
+        var result = await orderController.GetPendingOrders(user);
+        pendingOrders = result.Value;
+    }
+}

@@ -16,7 +16,6 @@ builder.Services.AddRazorComponents()
 
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-//builder.Services.AddDbContext<EcoMealDbContext>(options => options.UseSqlServer(connectionString));
 builder.Services.AddDbContextFactory<EcoMealDbContext>(options => options.UseSqlServer(connectionString));
 
 builder.Services.AddScoped<OrderRepository>();
@@ -47,12 +46,19 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IWalletRepository, WalletRepository>();
 builder.Services.AddScoped<IWalletService, WalletService>();
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7023") }); // Use your actual local port
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderStatusRepository, OrderStatusRepository>();
+builder.Services.AddScoped<IOrderEntryRepository, OrderEntryRepository>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+
+
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7023") });
 
 builder.Services.AddControllers();
 builder.Services.AddScoped<BusinessController>();
 builder.Services.AddScoped<PackageController>();
 builder.Services.AddScoped<AuthController>();
+builder.Services.AddScoped<OrderController>();
 
 builder.Services.AddScoped<UserContext>();
 
@@ -78,7 +84,7 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/login";
-    options.AccessDeniedPath = "/access-denied"; // TODO optional?
+    options.AccessDeniedPath = "/access-denied";
 });
 
 

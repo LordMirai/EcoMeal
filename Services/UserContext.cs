@@ -12,9 +12,7 @@ public class UserContext(
     AuthenticationStateProvider authStateProvider,
     IDbContextFactory<EcoMealDbContext> contextFactory,
     IServiceScopeFactory scopeFactory)
-
 {
-
 
     public async Task<ApplicationUser?> GetLocalUserAsync()
     {

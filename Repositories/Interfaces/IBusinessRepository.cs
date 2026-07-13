@@ -7,7 +7,7 @@ public interface IBusinessRepository
     public Task<List<Business>> GetAllAsync(bool includeDeleted = false);
     public Task AddAsync(Business business);
     public void UpdateAsync(Business business);
-    public Task<Business?> GetByIdAsync(Guid id);
+    public Task<Business?> GetByIdAsync(Guid id, bool includeDeleted = false);
     public Task DeleteAsync(Business business);
     public Task RestoreAsync(Business business);
     public Task SaveChangesAsync();

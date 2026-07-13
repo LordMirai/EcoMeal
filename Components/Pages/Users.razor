@@ -1,4 +1,6 @@
 ﻿@page "/users"
+@page "/admin"
+
 @rendermode InteractiveServer
 
 @using Microsoft.AspNetCore.Authorization;
@@ -15,14 +17,21 @@
 
 @attribute [Authorize(Roles = AppRoles.Admin)]
 
-<PageTitle>Identity Directory</PageTitle>
+<PageTitle>User Administration</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        @context.User.Identity?.Name
+    </Authorized>
+</AuthorizeView>
+
 
 <div class="container mt-4">
     <div class="card shadow-sm border-0 mb-4 rounded-3 text-white bg-dark">
         <div class="card-body p-4">
             <h2 class="h4 fw-bold mb-1 text-primary">Local User Information</h2>
-            <p class="text-muted small mb-0">
-                Core database metadata overview for currently authenticated administrator operations.
+            <p class="small mb-0 text-light">
+                View active users, change their roles or do whatever else may be relevant.
             </p>
         </div>
     </div>

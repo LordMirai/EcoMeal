@@ -18,19 +18,6 @@
 <h3>@headName</h3>
 <hr />
 
-@* CUE REDESIGN :D *@
-@*
-@if (error)
-{
-    <div class="alert alert-danger">
-        <span class="fw-bold">Error: </span>
-        Business with ID "@id" <span class="fw-bold">not found</span>.
-        Try again from the <a href="/businesses">main page</a>.
-    </div>
-    return;
-}
-*@
-
 @if (error)
 {
     <div class="container mt-5" style="max-width: 600px;">
@@ -52,60 +39,6 @@
 }
 
 
-@*
-@if (currentBusiness != null)
-{
-    <div class="container-sm">
-        <div class="fw-semibold">
-            Business "@currentBusiness?.Name" has @(packages?.Count ?? 0)<i class="bi bi-box-seam-fill"></i> packages available.
-        </div>
-        <div class="d-flex flex-wrap gap-3 align-items-center mb-3">
-            <div class="mt-2 p-2 border rounded bg-light text-center" style="max-width: 300px;">
-                <img src="@currentBusiness.ImageURL" class="img-thumbnail" style="width: 300px; height: 300px;" />
-            </div>
-        </div>
-
-        <a class="btn btn-primary" role="button" href="/create-package/@BusinessID">
-        Create New Package Listing <i class="bi bi-box-seam-fill"></i>
-        </a>
-
-            @if ((packages?.Count ?? 0) > 0)
-            {
-                <table class="table table-bordered table-hover mt-3">
-                    <thead>
-                        <tr class="table-dark">
-                            <th>Name</th>
-                            <th>Description</th>
-                            <th>Price</th>
-                            <th>Quantity</th>
-                            <th>Image</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (Package pkg in packages)
-                        {
-                            <tr>
-                                <td>@pkg.Name</td>
-                                <td>@pkg.Description</td>
-                                <td>@pkg.Price</td>
-                                <td>@pkg.Quantity</td>
-                                <td>
-                                    <img src="@pkg.ImageURL" alt="photo" style="width:100px; height:100px;"/>
-                                </td>
-                                <td>
-                                    <a href="/create-package/edit/@pkg.Id" class="btn btn-warning" role="button">
-                                        Edit <i class="bi bi-pencil-square"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            }
-     </div>
-}
-*@
 
 
 @* Admin control for bogus gen *@

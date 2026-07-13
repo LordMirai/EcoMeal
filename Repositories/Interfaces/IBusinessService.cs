@@ -7,7 +7,7 @@ public interface IBusinessService
     public Task<List<Business>> GetAll(bool includeDeleted = false);
 
     public Task AddAsync(Business business);
-    public Task<Business?> GetById(Guid id);
+    public Task<Business?> GetById(Guid id, bool includeDeleted = false);
 
     public Task UpdateAsync(Business business);
 

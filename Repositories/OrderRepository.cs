@@ -1,11 +1,11 @@
 ﻿using EcoMeal.Database;
 using EcoMeal.Entities;
-
+using EcoMeal.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace EcoMeal.Repositories;
 
-public class OrderRepository(EcoMealDbContext context)
+public class OrderRepository(EcoMealDbContext context): IOrderRepository
 {
     public async Task<List<Order>> GetAllAsync()
     {
@@ -39,5 +39,15 @@ public class OrderRepository(EcoMealDbContext context)
     public async Task SaveChangesAsync()
     {
         await context.SaveChangesAsync();
+    }
+
+    public async Task<List<Order>> GetUserOrders(ApplicationUser user)
+    {
+        return context.Orders.Where(o => o.User.Id == user.Id).ToList();
+    }
+
+    public async Task<List<Order>> GetPendingOrders(ApplicationUser user, OrderStatus pendingStatus)
+    {
+        return context.Orders.Where(o => o.User.Id == user.Id && o.Status.Id == pendingStatus.Id).ToList();
     }
 }
