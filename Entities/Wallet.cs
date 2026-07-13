@@ -1,0 +1,12 @@
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace EcoMeal.Entities;
+
+public class Wallet
+{
+    public Guid Id { get; set; }
+    
+    [ForeignKey("UserId")]
+    public required ApplicationUser User { get; set; }
+    public decimal Balance { get; set; } = 0;
+}

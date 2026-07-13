@@ -1,0 +1,221 @@
+﻿@page "/dashboard"
+@rendermode InteractiveServer
+
+@using Bogus
+@using EcoMeal.Constants;
+@using EcoMeal.Entities;
+@using EcoMeal.Services;
+@using Microsoft.AspNetCore.Authorization;
+@using Microsoft.AspNetCore.Components.Authorization;
+@using Microsoft.AspNetCore.Identity;
+@using Microsoft.EntityFrameworkCore;
+
+
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject UserContext userContext
+
+@attribute [Authorize]
+
+<PageTitle>Dashboard</PageTitle>
+
+<h1>Dashboard</h1>
+<hr />
+
+<AuthorizeView> @*I'll be plain and honest here. we're enveloping the entire page in AuthorizeView just so I can have easy access to context.User XD*@
+    <Authorized>
+
+        <div class="dashboard-container">
+            @* main nav *@
+            <aside class="sidebar">
+                <div class="sidebar-brand text-center">
+                    <img src="/ecomeal_light.png" style="width: 100px; height: 100px;">
+                </div>
+                <nav class="sidebar-menu">
+                    <button class="menu-item @(ActiveTab == "Overview" ? "active" : "")"
+                            @onclick='() => SetActiveTab("Overview")'>
+                        Overview
+                    </button>
+                    <button class="menu-item @(ActiveTab == "ActiveOrders" ? "active" : "")"
+                            @onclick='() => SetActiveTab("ActiveOrders")'>
+                        Active Orders (@ActiveOrders.Count)
+                    </button>
+                    <button class="menu-item @(ActiveTab == "Wallet" ? "active" : "")"
+                            @onclick='() => SetActiveTab("Wallet")'>
+                        Wallet
+                    </button>
+                    <button class="menu-item @(ActiveTab == "History" ? "active" : "")"
+                            @onclick='() => SetActiveTab("History")'>
+                        Transaction History
+                    </button>
+                </nav>
+            </aside>
+
+            @* split context nav *@
+            <main class="main-content">
+                <header class="content-header">
+                    <h1>Client Management Console</h1>
+                    <div class="user-profile">Welcome back, @(context.User.FindFirst("FullName")?.Value ?? "Client")</div>
+                </header>
+
+                @* This thing looks fancy and different based on context *@
+                @if (ActiveTab == "Overview")
+                {
+                    <div class="tab-panel">
+                        <section class="metrics-grid">
+                            <div class="metric-card">
+                                <h3>Current Total Balance</h3>
+                                <p class="metric-value">$@CurrentBalance.ToString("F2")</p>
+                            </div>
+                            <div class="metric-card">
+                                <h3>Monitored Trackers</h3>
+                                <p class="metric-value">@ActiveOrders.Count Active Items</p>
+                            </div>
+                        </section>
+                        <div class="panel-card hint-box text-light">
+                            <p>Select a tab from the left sidebar or click below to deep dive into operational specifics.</p>
+                            <button class="btn-primary" @onclick='() => SetActiveTab("ActiveOrders")'>View Active Tracking</button>
+                        </div>
+                    </div>
+                }
+                else if (ActiveTab == "ActiveOrders")
+                {
+                    <div class="tab-panel">
+                        <div class="panel-card">
+                            <h3>Current Dispatched Orders</h3>
+                            @if (ActiveOrders.Count == 0)
+                            {
+                                <p class="empty-state">No current operations active for this account profile.</p>
+                            }
+                            else
+                            {
+                                <div class="orders-list">
+                                    @foreach (var order in ActiveOrders)
+                                    {
+                                        <div class="order-item-row">
+                                            <div class="order-meta">
+                                                <span class="fw-bold text-light">@order.OrderId</span> - <span class="order-desc">@order.PackageName</span>
+                                            </div>
+                                            <span class="badge @order.Status.ToLower().Replace(" ", "-")">@order.Status</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (ActiveTab == "Wallet") @* the wallet part is "faked". i mean, right now, it's just a clientside front, but yah. *@
+                {
+                    <div class="tab-panel">
+                        <div class="panel-card explicit-wallet">
+                            <h3>Account Wallet Handling</h3>
+                            <div class="balance-display-box">
+                                <span class="label">Available Funds</span>
+                                <h2 class="wallet-funds">$@CurrentBalance.ToString("F2")</h2>
+                            </div>
+
+                            <div class="wallet-actions">
+                                <button class="btn-action success" @onclick="() => AdjustFunds(50)">+ Deposit $50.00</button>
+                                <button class="btn-action success" @onclick="() => AdjustFunds(100)">+ Deposit $100.00</button>
+                                <button class="btn-action danger" @onclick="ResetLedger">Wipe Clear Local Storage Ledger</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (ActiveTab == "History")
+                {
+                    <div class="tab-panel">
+                        <div class="panel-card">
+                            <h3>Verified Database Ledgers</h3>
+                            <div class="table-responsive">
+                                <table class="data-table text-light">
+                                    <thead>
+                                        <tr>
+                                            <th>TXID</th>
+                                            <th>Classification</th>
+                                            <th>Allocation Log</th>
+                                            <th>Value Change</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var tx in Transactions)
+                                        {
+                                            <tr>
+                                                <td><code>@tx.TxId</code></td>
+                                                <td><span class="badge badge-@tx.Type.ToLower()">@tx.Type</span></td>
+                                                <td>@tx.Description</td>
+                                                <td class="@(tx.Amount >= 0 ? "text-success" : "text-danger")">
+                                                    @(tx.Amount >= 0 ? "+" : "")@tx.Amount.ToString("F2")
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </main>
+        </div>
+
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private string ActiveTab { get; set; } = "Overview";
+    private decimal CurrentBalance { get; set; } = 150.00m;
+
+    private Faker faker = new Faker();
+
+    // Local Models for tracking items generically
+    private List<OrderTracker> ActiveOrders = new()
+    {
+        new OrderTracker { OrderId = "#ORD-9901A", PackageName = "Industrial Logistical Assets B", Status = "Processing" },
+        new OrderTracker { OrderId = "#ORD-4412C", PackageName = "Commercial Enterprise Node Routing", Status = "En-Route" }
+    };
+
+    private List<LedgerRow> Transactions = new()
+    {
+        new LedgerRow { TxId = "#TX-89A2F", Type = "Deposit", Description = "Injected Account Balance allocation via Service Portal", Amount = 50.00m },
+        new LedgerRow { TxId = "#TX-74B1C", Type = "Purchase", Description = "Asset Package Assignment Procurement", Amount = -12.50m }
+    };
+
+    private void SetActiveTab(string tabName)
+    {
+        ActiveTab = tabName;
+    }
+
+    private void AdjustFunds(decimal amount)
+    {
+        CurrentBalance += amount;
+        Transactions.Insert(0, new LedgerRow
+        {
+            TxId = $"#TX-{faker.Random.Hash(6, true)}",
+            Type = "Deposit",
+            Description = "Injected Account Balance allocation via Service Portal",
+            Amount = amount
+        });
+    }
+
+    private void ResetLedger()
+    {
+        CurrentBalance = 150.00m;
+        Transactions.Clear();
+    }
+
+    public class OrderTracker
+    {
+        public string OrderId { get; set; } = string.Empty;
+        public string BusinessId { get; set; } = string.Empty;
+        public string PackageName { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+    }
+
+    public class LedgerRow
+    {
+        public string TxId { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty; // Deposit or Purchase
+        public string Description { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+    }
+}

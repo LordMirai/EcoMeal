@@ -51,6 +51,6 @@ public class UtilityService
 
     public bool HasAlert()
     {
-        return !AlertMessage.IsNullOrEmpty();
+        return !string.IsNullOrEmpty(AlertMessage);
     }
 }

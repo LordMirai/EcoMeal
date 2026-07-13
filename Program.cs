@@ -52,6 +52,9 @@ builder.Services.AddScoped<AuthController>();
 builder.Services.AddScoped<UserContext>();
 
 
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+
+
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;

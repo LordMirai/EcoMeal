@@ -20,5 +20,6 @@ namespace EcoMeal.Entities
         public DateTime PickupTime { get; set; }
         public DateTime ExpiryDate { get; set; }
         public required string ImageURL { get; set; }
+        public bool IsDeleted { get; set; } = false;
     }
 }

@@ -4,6 +4,8 @@ using EcoMeal.Entities;
 using EcoMeal.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace EcoMeal.Services;
 

@@ -1,0 +1,264 @@
+.dashboard-container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+    font-family: system-ui, -apple-system, sans-serif;
+    background-color: #0b0f19;
+}
+
+.sidebar {
+    background-color: #0f172a;
+    color: #f8fafc;
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #1e293b;
+}
+
+.sidebar-brand h2 {
+    margin: 0 0 2.5rem 0;
+    color: #3b82f6;
+    font-size: 1.4rem;
+    letter-spacing: 0.5px;
+}
+
+.sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.menu-item {
+    background: none;
+    border: none;
+    text-align: left;
+    color: #94a3b8;
+    font-size: 0.95rem;
+    padding: 0.8rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+    .menu-item:hover {
+        background-color: #1e293b;
+        color: #f1f5f9;
+    }
+
+    .menu-item.active {
+        background-color: #2563eb;
+        color: #ffffff;
+        font-weight: 500;
+    }
+
+.main-content {
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.content-header h1 {
+    margin: 0;
+    font-size: 1.6rem;
+    color: #f1f5f9;
+}
+
+.user-profile {
+    color: #94a3b8;
+    font-size: 0.9rem;
+}
+
+.tab-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    animation: fadeIn 0.15s ease-in-out;
+}
+
+.panel-card {
+    background: #111827;
+    padding: 1.75rem;
+    border-radius: 8px;
+    border: 1px solid #1f2937;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+}
+
+    .panel-card h3 {
+        margin: 0 0 1.25rem 0;
+        font-size: 1.1rem;
+        color: #e2e8f0;
+    }
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.metric-card {
+    background: #111827;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #1f2937;
+}
+
+    .metric-card h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 0.85rem;
+        color: #94a3b8;
+        text-transform: uppercase;
+    }
+
+.metric-value {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.order-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: #1f2937;
+    border-radius: 6px;
+    border: 1px solid #374151;
+}
+
+.order-desc {
+    color: #94a3b8;
+    font-size: 0.9rem;
+}
+
+.badge {
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.badge-processing {
+    background: #78350f;
+    color: #fef3c7;
+}
+
+.badge-in-route {
+    background: #1e3a8a;
+    color: #dbeafe;
+}
+
+.badge-deposit {
+    background: #064e3b;
+    color: #dcfce7;
+}
+
+.badge-purchase {
+    background: #7f1d1d;
+    color: #fee2e2;
+}
+
+.balance-display-box {
+    margin-bottom: 1.5rem;
+}
+
+    .balance-display-box .label {
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+
+.wallet-funds {
+    margin: 0.25rem 0 0 0;
+    font-size: 2.2rem;
+    color: #ffffff;
+}
+
+.wallet-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.btn-action {
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+    .btn-action.success {
+        background: #10b981;
+        color: white;
+    }
+
+.action-trigger-main {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.action-trigger-destructive {
+    background: none;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.scrollable-table-wrapper {
+    overflow-x: auto;
+}
+
+.ledger-data-grid {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+    .ledger-data-grid th,
+    .ledger-data-grid td {
+        padding: 0.85rem;
+        border-bottom: 1px solid #1f2937;
+        font-size: 0.9rem;
+        color: #cbd5e1;
+    }
+
+    .ledger-data-grid th {
+        background-color: #1f2937;
+        color: #94a3b8;
+    }
+
+.value-positive {
+    color: #10b981;
+    font-weight: 500;
+}
+
+.value-negative {
+    color: #ef4444;
+    font-weight: 500;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(2px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
