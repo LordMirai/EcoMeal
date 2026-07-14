@@ -13,5 +13,7 @@ public interface IBusinessService
 
     public Task DeleteAsync(Business business);
     public Task RestoreAsync(Business business);
+    public string GetAccronym(Business business);
+    public string GenerateOrderName(Business business);
 }
 

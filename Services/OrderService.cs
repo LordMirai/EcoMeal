@@ -1,9 +1,10 @@
 ﻿using EcoMeal.Entities;
 using EcoMeal.Repositories.Interfaces;
+using Bogus;
 
 namespace EcoMeal.Services;
 
-public class OrderService(IOrderRepository orderRepository, IOrderStatusRepository orderStatusRepository) : IOrderService
+public class OrderService(IOrderRepository orderRepository, IOrderStatusRepository orderStatusRepository, IBusinessService businessService) : IOrderService
 {
     public async Task<List<Order>> GetAllAsync()
     {
@@ -42,8 +43,20 @@ public class OrderService(IOrderRepository orderRepository, IOrderStatusReposito
 
     public async Task<List<Order>> GetPendingOrders(ApplicationUser user)
     {
-        var pending = await orderStatusRepository.GetStatusByNameAsync("Pending");
+        var pending = await GetPendingStatus();
 
         return await orderRepository.GetPendingOrders(user, pending);
+    }
+
+    public async Task<List<Order>> GetPendingOrdersForBusiness(Guid userId, Business business)
+    {
+        var pending = await GetPendingStatus();
+
+        return await orderRepository.GetPendingOrdersForBusiness(userId, business, pending);
+    }
+
+    public async Task<OrderStatus> GetPendingStatus()
+    {
+        return await orderStatusRepository.GetStatusByNameAsync("Pending");
     }
 }

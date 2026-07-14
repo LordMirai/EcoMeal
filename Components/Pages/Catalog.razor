@@ -3,6 +3,7 @@
 
 @using EcoMeal.Entities;
 @using EcoMeal.Controllers;
+@using EcoMeal.Services;
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Mvc;
 @using Bogus
@@ -10,6 +11,8 @@
 
 @inject BusinessController businessController
 @inject PackageController packageController
+@inject OrderController orderController
+@inject UserContext userContext
 
 
 
@@ -196,32 +199,38 @@
                                     @pkg.Description
                                 </p>
 
-                                <div class="d-flex justify-content-between align-items-center border-top pt-3 mt-auto w-100">
-                                    <span class="small text-muted">
-                                        <i class="bi bi-stack me-1"></i> Stock:
-                                        <span class="fw-semibold @(isOutOfStock ? "text-danger" : "text-dark")">@pkg.Quantity pcs</span>
-                                    </span>
+                                <AuthorizeView Context="_unused">
+                                    <Authorized>
 
-                                    <div class="d-flex gap-2">
-                                        @* Order layout will go here someday. *@
-                                        <button class="btn btn-sm btn-outline-primary fw-semibold px-3" disabled="@isOutOfStock">
-                                            <i class="bi bi-cart-plus"></i>
-                                        </button>
 
-                                        <a href="/create-package/edit/@pkg.Id" class="btn btn-sm btn-warning text-dark fw-medium px-3" role="button" title="Modify Package Metadata">
-                                            Edit <i class="bi bi-pencil-square ms-1"></i>
-                                        </a>
+                                        <div class="d-flex justify-content-between align-items-center border-top pt-3 mt-auto w-100">
+                                            <span class="small text-muted">
+                                                <i class="bi bi-stack me-1"></i> Stock:
+                                                <span class="fw-semibold @(isOutOfStock ? "text-danger" : "text-dark")">@pkg.Quantity pcs</span>
+                                            </span>
 
-                                        <AuthorizeView Roles="admin">
-                                            <Authorized>
-                                                <button type="button" role="button" class="btn btn-sm btn-danger px-3 transition-danger-btn"
-                                                        @onclick="() => DeletePackage(pkg)" title="Permanently Delete Package">
-                                                    <i class="bi bi-trash3"></i>
+                                            <div class="d-flex gap-2">
+                                                @* Order layout will go here someday. *@
+                                                <button class="btn btn-sm btn-outline-primary fw-semibold px-3" disabled="@isOutOfStock" @onclick="() => OpenAddToCartModal(pkg)">
+                                                    <i class="bi bi-cart-plus"></i>
                                                 </button>
-                                            </Authorized>
-                                        </AuthorizeView>
-                                    </div>
-                                </div>
+
+                                                <AuthorizeView Roles="admin">
+                                                    <Authorized>
+                                                        <a href="/create-package/edit/@pkg.Id" class="btn btn-sm btn-warning text-dark fw-medium px-3" role="button" title="Modify Package Metadata">
+                                                            Edit <i class="bi bi-pencil-square ms-1"></i>
+                                                        </a>
+                                                        <button type="button" role="button" class="btn btn-sm btn-danger px-3 transition-danger-btn"
+                                                                @onclick="() => DeletePackage(pkg)" title="Permanently Delete Package">
+                                                            <i class="bi bi-trash3"></i>
+                                                        </button>
+                                                    </Authorized>
+                                                </AuthorizeView>
+                                            </div>
+                                        </div>
+
+                                    </Authorized>
+                                </AuthorizeView>
                             </div>
                         </div>
                     </div>
@@ -232,6 +241,61 @@
 }
 
 
+
+@* "Add to cart" modal *@
+@if (showModal && selectedPackage != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5);" role="dialog">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content border-0 shadow rounded-3">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-dark">Add Package to Cart</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <div class="text-center mb-3">
+                        <span class="text-muted small d-block mb-1">Target Package</span>
+                        <h6 class="fw-bold text-primary mb-0">@selectedPackage.Name</h6>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-center gap-3 mb-4">
+                        <button type="button" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;" @onclick="DecrementQty" disabled="@(selectedQty <= 1)">
+                            <i class="bi bi-dash-lg"></i>
+                        </button>
+
+                        <div class="text-center" style="min-width: 60px;">
+                            <span class="fs-3 fw-bold text-dark">@selectedQty</span>
+                            <span class="text-muted small d-block">units</span>
+                        </div>
+
+                        <button type="button" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;" @onclick="IncrementQty" disabled="@(selectedQty >= selectedPackage.Quantity)">
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                    </div>
+
+                    <div class="px-3 mb-4">
+                        <input type="range" class="form-range custom-slider" min="1" max="@selectedPackage.Quantity" @bind="selectedQty" @bind:event="oninput" />
+                        <div class="d-flex justify-content-between small text-muted mt-1">
+                            <span>1</span>
+                            <span>Max Available: @selectedPackage.Quantity</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-light rounded-3 p-3 text-center mx-2 shadow-sm border">
+                        <span class="text-secondary small d-block mb-1">Calculated Total Estimate</span>
+                        <h4 class="fw-bold text-success mb-0">$@((selectedPackage.Price * selectedQty).ToString("F2"))</h4>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light fw-semibold px-4" @onclick="CloseModal">Cancel</button>
+                    <button type="button" class="btn btn-primary fw-semibold px-4 shadow-sm" @onclick="SubmitAddToCart">
+                        <i class="bi bi-cart-check-fill me-2"></i>Add to Cart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 
 @code {
@@ -246,6 +310,13 @@
 
     bool error = false;
     string headName => error ? "Catalog - Error - Bad ID" : $"Catalog for {currentBusiness?.Name}";
+
+    private ApplicationUser? currentUser;
+
+    // Modal Control State
+    private bool showModal = false;
+    private Package? selectedPackage;
+    private int selectedQty = 1;
 
     private List<PackageType>? packageTypes = new();
     private List<Package>? packages = new();
@@ -288,6 +359,8 @@
             return;
         }
 
+        currentUser = await userContext.GetLocalUserAsync();
+
         // Console.WriteLine($"Catalog ID: {BusinessID}");
 
         ActionResult<Business?> result = await businessController.GetById(BusinessID);
@@ -302,6 +375,57 @@
 
         ActionResult<List<Package>> packageResult = await packageController.GetByBusinessIdAsync(BusinessID);
         packages = packageResult.Value;
+    }
+
+    // modal stuff
+    private void OpenAddToCartModal(Package pkg)
+    {
+        selectedPackage = pkg;
+        selectedQty = 1; // Reset allocation sequence
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        selectedPackage = null;
+    }
+
+    private void IncrementQty()
+    {
+        if (selectedPackage != null && selectedQty < selectedPackage.Quantity)
+        {
+            selectedQty++;
+        }
+    }
+
+    private void DecrementQty()
+    {
+        if (selectedQty > 1)
+        {
+            selectedQty--;
+        }
+    }
+
+    private async Task SubmitAddToCart()
+    {
+        if (selectedPackage == null) return;
+
+        Console.WriteLine($"Adding {selectedQty} of {selectedPackage.Name} to cart.");
+
+        if (currentUser == null)
+        {
+            Console.WriteLine("User not logged in. Cannot add to cart.");
+            CloseModal();
+            return;
+        }
+
+        Console.WriteLine("For my own sanity. DO we have the valid business?");
+        Console.WriteLine($"{selectedPackage.Business.Name}");
+
+        var result = await orderController.AddToCart(Guid.Parse(currentUser.Id), selectedPackage, selectedQty);
+
+        CloseModal();
     }
 }
 

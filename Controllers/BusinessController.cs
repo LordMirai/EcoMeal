@@ -27,24 +27,7 @@ public class BusinessController(IBusinessService businessService, IBusinessTypeS
 
     public string GetAccronym(Business business)
     {
-        string Name = business.Name;
-        Name = Name.Trim();
-        if (string.IsNullOrEmpty(Name)) return "[?]";
-
-        string cleanName = Name.ToUpper();
-
-        string[] noiseWords = { "AND", "INC", "CO", "LLC", "CORP" };
-        foreach (string noise in noiseWords)
-        {
-            cleanName = Regex.Replace(cleanName, $@"\b{noise}\b", "", RegexOptions.IgnoreCase);
-        }
-        cleanName = Regex.Replace(cleanName, @"[^A-Z\s]", "");
-
-        var accroChars = cleanName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .Select(word => word[0])
-            .Take(4);
-
-        return string.Concat(accroChars);
+        return businessService.GetAccronym(business);
     }
 
     public async Task<ActionResult> AddAsync(Business business)

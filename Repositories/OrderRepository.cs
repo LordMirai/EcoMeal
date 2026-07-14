@@ -43,11 +43,19 @@ public class OrderRepository(EcoMealDbContext context): IOrderRepository
 
     public async Task<List<Order>> GetUserOrders(ApplicationUser user)
     {
-        return context.Orders.Where(o => o.User.Id == user.Id).ToList();
+        return await context.Orders.Where(o => o.User.Id == user.Id).ToListAsync();
     }
 
     public async Task<List<Order>> GetPendingOrders(ApplicationUser user, OrderStatus pendingStatus)
     {
-        return context.Orders.Where(o => o.User.Id == user.Id && o.Status.Id == pendingStatus.Id).ToList();
+        return await context.Orders.Where(o => o.User.Id == user.Id && o.Status.Id == pendingStatus.Id).ToListAsync();
+    }
+
+    public async Task<List<Order>> GetPendingOrdersForBusiness(Guid userId, Business business, OrderStatus pendingStatus)
+    {
+        return await context.Orders.Where(o => o.User.Id == userId.ToString())
+            .Where(o => o.Business.Id == business.Id)
+            .Where(o => o.Status.Id == pendingStatus.Id)
+            .ToListAsync();
     }
 }

@@ -12,5 +12,7 @@ public interface IOrderService
     public Task SaveChangesAsync();
     public Task<List<Order>> GetUserOrdersAsync(ApplicationUser user);
     public Task<List<Order>> GetPendingOrders(ApplicationUser user);
+    public Task<List<Order>> GetPendingOrdersForBusiness(Guid userId, Business business);
 
+    public Task<OrderStatus> GetPendingStatus();
 }
