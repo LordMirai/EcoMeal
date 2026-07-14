@@ -10,4 +10,5 @@ public interface IOrderEntryRepository
     public Task UpdateAsync(OrderEntry orderEntry);
     public Task<OrderEntry?> GetByIdAsync(Guid id);
     public Task SaveChangesAsync();
+    public Task<List<OrderEntry>> GetByOrderAsync(Guid orderId);
 }

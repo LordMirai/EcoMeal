@@ -7,7 +7,7 @@ namespace EcoMeal.Controllers;
 
 [ApiController]
 [Route("/")]
-public class OrderController(IOrderService orderService, IBusinessService businessService) : ControllerBase
+public class OrderController(IOrderService orderService, IBusinessService businessService, IOrderEntryService orderEntryService) : ControllerBase
 {
     public async Task<ActionResult<List<Order>>> GetAll()
     {
@@ -46,6 +46,9 @@ public class OrderController(IOrderService orderService, IBusinessService busine
          * Said order will bear its identifier *as dictated by the business* and its accronym. we'll have it generic this time.
          * deleting all items from the cart will delete the order and its items.
          * if the order is accepted and sent, deleting it will be *soft* delete.
+         * 
+         * TODO: Do not permit to add to cart more than the available quantity of a package. 
+         * (so while the av qnt is 15, you shouldn't be able to add 10 to cart and then 10 more, for example)
          */
 
         if (package is null || (quantity <= 0))
@@ -62,6 +65,7 @@ public class OrderController(IOrderService orderService, IBusinessService busine
             // initialize the order
             activeOrder = await CreateOrder(userId, package.Business);
         }
+        var newEntry = orderEntryService.Create(activeOrder, package, quantity);
 
         return Ok();
     }
@@ -81,6 +85,8 @@ public class OrderController(IOrderService orderService, IBusinessService busine
             OrderNumber = orderNumber,
             CreatedAt = DateTime.UtcNow
         };
+
+        Console.WriteLine($"Creating order with Order Number: {order.OrderNumber}, for: {business.Name}");
 
         await AddAsync(order);
         return order;
