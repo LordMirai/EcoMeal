@@ -4,50 +4,237 @@
 @using Microsoft.AspNetCore.Authorization;
 @using EcoMeal.Services;
 @using EcoMeal.Controllers;
+@using EcoMeal.Entities;
+@using EcoMeal.Repositories.Interfaces;
 
 @inject UserContext userContext
 @inject OrderController orderController
-
+@inject IOrderEntryService orderEntryService
+@inject NavigationManager NavManager
 
 @attribute [Authorize]
 
 <PageTitle>Cart</PageTitle>
 
-<h1>Cart</h1>
-<hr />
-
-@if (pendingOrders is null)
-{
-    <p>Loading</p>
-
-}
-else
-{
-
-
-
-    <div class="container" style="max-width:600px;">
-        <p class="fs-4 text-secondary">
-            You have @pendingOrders.Count pending orders in your cart.
-        </p>
+<div class="container py-4" style="max-width:800px;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="fw-bold text-dark mb-0">My Cart</h1>
+        <a href="/businesses" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Continue Browsing
+        </a>
     </div>
-}
+    <hr />
+
+    @if (pendingOrders is null || orderEntriesMap is null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted mt-2">Fetching your active cart reservations...</p>
+        </div>
+    }
+    else if (!pendingOrders.Any())
+    {
+        <div class="card border-0 shadow-sm p-5 text-center bg-white rounded-3">
+            <div class="py-4">
+                <i class="bi bi-cart-x text-muted fs-1 mb-3 d-block"></i>
+                <h5 class="fw-bold text-dark">Your Cart is Empty</h5>
+                <p class="text-secondary small mx-auto mb-4" style="max-width: 400px;">
+                    You don't have any pending orders right now. Head over to our businesses and browse their catalog to place an order!
+                </p>
+                <a href="/businesses" class="btn btn-primary fw-semibold btn-sm px-4 shadow-sm">
+                    Browse Businesses
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p class="fs-5 text-secondary mb-4">
+            You have <span class="fw-semibold text-dark">@pendingOrders.Count</span> pending @(pendingOrders.Count == 1 ? "order" : "orders") in your cart.
+        </p>
+
+        <div class="d-flex flex-column gap-4">
+            @foreach (var order in pendingOrders)
+            {
+                var entries = GetEntriesForOrder(order.Id);
+                var totalOrderPrice = CalculateOrderTotal(entries);
+
+                <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+                    @* Header: Business Information *@
+                    <div class="card-header bg-light border-0 d-flex justify-content-between align-items-center p-3">
+                        <div class="d-flex align-items-center gap-3">
+                            @if (order.Business != null)
+                            {
+                                <img src="@order.Business.ImageURL"
+                                     class="rounded-2 object-fit-cover shadow-sm"
+                                     style="width: 45px; height: 45px;"
+                                     alt="@order.Business.Name Profile" />
+                                <div>
+                                    <h5 class="fw-bold text-dark mb-0 fs-6">@order.Business.Name</h5>
+                                    <span class="text-muted small">Order Code: <code class="bg-white px-1.5 py-0.5 rounded border">@order.OrderNumber</code></span>
+                                </div>
+                            }
+                        </div>
+                        <span class="badge bg-warning text-dark text-uppercase fw-bold px-2.5 py-1.5" style="font-size: 0.75rem;">
+                            <i class="bi bi-hourglass-split me-1"></i> Pending
+                        </span>
+                    </div>
+
+                    @* Body: Cart Line Items *@
+                    <div class="card-body p-3">
+                        @if (entries.Any())
+                        {
+                            <div class="list-group list-group-flush">
+                                @foreach (var entry in entries)
+                                {
+                                    <div class="list-group-item border-0 px-0 d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center gap-3">
+                                            @if (entry.Package != null)
+                                            {
+                                                <img src="@entry.Package.ImageURL"
+                                                     class="rounded-2 object-fit-cover border"
+                                                     style="width: 40px; height: 40px;"
+                                                     alt="@entry.Package.Name" />
+                                                <div>
+                                                    <span class="fw-semibold text-dark d-block">@entry.Package.Name</span>
+                                                    <span class="text-secondary small">Qty: @entry.Quantity &times; $@entry.Package.Price.ToString("F2")</span>
+                                                </div>
+                                            }
+                                        </div>
+                                        @if (entry.Package != null)
+                                        {
+                                            <span class="fw-bold text-dark">$@((entry.Package.Price * entry.Quantity).ToString("F2"))</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted small text-center my-3">No packages are currently associated with this pending order.</p>
+                        }
+
+                        @* Dynamic Cost Breakdown calculated live *@
+                        <div class="d-flex justify-content-end border-top pt-3 mt-2">
+                            <div class="text-end">
+                                <span class="text-secondary small d-block">Estimated Total</span>
+                                <h4 class="fw-bold text-success mb-0">$@totalOrderPrice.ToString("F2")</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Footer Actions *@
+                    <div class="card-footer bg-white border-0 d-flex justify-content-between p-3 border-top">
+                        <button type="button" class="btn btn-outline-danger btn-sm fw-semibold px-3"
+                                @onclick="() => CancelPendingOrder(order.Id)"
+                                disabled="@isProcessing">
+                            <i class="bi bi-trash3 me-1"></i> Cancel Order
+                        </button>
+
+                        <button type="button" class="btn btn-success btn-sm fw-semibold px-4 shadow-sm"
+                                @onclick="() => SubmitPendingOrder(order.Id)"
+                                disabled="@isProcessing">
+                            Place Order <i class="bi bi-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
 
 @code {
     private ApplicationUser? user;
-
     private List<Order>? pendingOrders;
+
+    private Dictionary<Guid, List<OrderEntry>>? orderEntriesMap;
+    private bool isProcessing = false;
+
 
     protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine("\n\n\n WE ARE INIT THE CART \n\n\n");
+        await LoadCartData();
+    }
+
+    private async Task LoadCartData()
+    {
         user = await userContext.GetLocalUserAsync();
         if (user is null)
             return;
 
-        Console.WriteLine("\n\n WE GOT THE USER \n\n");
-
         var result = await orderController.GetPendingOrders(user);
         pendingOrders = result.Value;
+
+        if (pendingOrders != null)
+        {
+            orderEntriesMap = new Dictionary<Guid, List<OrderEntry>>();
+
+            foreach (var order in pendingOrders)
+            {
+                var entries = await orderEntryService.GetByOrder(order.Id);
+                // Console.WriteLine($"Fetched {entries.Count} entries for Order ID: {order.Id}. For sanity, business name is: {order.Business.Name}");
+                orderEntriesMap[order.Id] = entries ?? new List<OrderEntry>();
+            }
+        }
+
+        Console.WriteLine("\n\nFinished loading cart data!!");
+    }
+
+    private List<OrderEntry> GetEntriesForOrder(Guid orderId)
+    {
+        if (orderEntriesMap != null && orderEntriesMap.TryGetValue(orderId, out var entries))
+        {
+            return entries;
+        }
+        return new List<OrderEntry>();
+    }
+
+    private double CalculateOrderTotal(List<OrderEntry> entries)
+    {
+        if (entries == null || !entries.Any())
+            return 0.0;
+
+
+        return entries
+            .Where(e => e.Package != null)
+            .Sum(e => e.Package.Price * e.Quantity);
+    }
+
+    private async Task CancelPendingOrder(Guid orderId)
+    {
+        isProcessing = true;
+        try
+        {
+            await orderController.CancelOrder(orderId, user);
+            await LoadCartData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error canceling pending order: {ex.Message}");
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private async Task SubmitPendingOrder(Guid orderId)
+    {
+        isProcessing = true;
+        try
+        {
+            await orderController.SubmitOrder(orderId, user);
+            NavManager.NavigateTo("/dashboard");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error submitting order: {ex.Message}");
+        }
+        finally
+        {
+            isProcessing = false;
+        }
     }
 }

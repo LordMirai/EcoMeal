@@ -59,4 +59,17 @@ public class OrderService(IOrderRepository orderRepository, IOrderStatusReposito
     {
         return await orderStatusRepository.GetStatusByNameAsync("Pending");
     }
+
+    public async Task<OrderStatus> GetStatusByNameAsync(string statusName)
+    {
+        return await orderStatusRepository.GetStatusByNameAsync(statusName);
+    }
+
+    public async Task SetInProgress(Order order)
+    {
+        var inProgress = await orderStatusRepository.GetStatusByNameAsync("In Progress");
+        order.Status = inProgress;
+        await orderRepository.UpdateAsync(order);
+        await orderRepository.SaveChangesAsync();
+    }
 }

@@ -424,6 +424,7 @@
         Console.WriteLine($"{selectedPackage.Business.Name}");
 
         var result = await orderController.AddToCart(Guid.Parse(currentUser.Id), selectedPackage, selectedQty);
+        Console.WriteLine($"Add to cart result: {result}");
 
         CloseModal();
     }

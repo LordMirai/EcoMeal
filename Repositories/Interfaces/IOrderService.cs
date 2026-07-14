@@ -15,4 +15,6 @@ public interface IOrderService
     public Task<List<Order>> GetPendingOrdersForBusiness(Guid userId, Business business);
 
     public Task<OrderStatus> GetPendingStatus();
+    public Task<OrderStatus> GetStatusByNameAsync(string statusName);
+    public Task SetInProgress(Order order);
 }

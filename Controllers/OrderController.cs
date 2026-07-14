@@ -59,11 +59,16 @@ public class OrderController(IOrderService orderService, IBusinessService busine
         var pendingRelevantOrders = await orderService.GetPendingOrdersForBusiness(userId, package.Business);
         Console.WriteLine($"Pending orders for business {package.Business.Name}: {pendingRelevantOrders.Count}");
 
-        var activeOrder = pendingRelevantOrders.First();
-        if (activeOrder == null)
+        Order activeOrder;
+        if (pendingRelevantOrders.Count == 0)
         {
             // initialize the order
             activeOrder = await CreateOrder(userId, package.Business);
+        }
+        else
+        {
+            activeOrder = pendingRelevantOrders.First();
+            Console.WriteLine("Found existing pending order, adding to it.");
         }
         var newEntry = orderEntryService.Create(activeOrder, package, quantity);
 
@@ -96,5 +101,35 @@ public class OrderController(IOrderService orderService, IBusinessService busine
     {
         await orderService.AddAsync(order);
         await orderService.SaveChangesAsync();
+    }
+
+    public async Task CancelOrder(Guid orderId, ApplicationUser requestor)
+    {
+        Order order = await orderService.GetByIdAsync(orderId);
+        if (order == null) return;
+        if (order.UserId != requestor.Id) return;
+
+        await orderService.DeleteAsync(order);
+        await orderService.SaveChangesAsync();
+    }
+
+    public async Task SubmitOrder(Guid orderId, ApplicationUser requestor)
+    {
+        Order order = await orderService.GetByIdAsync(orderId);
+        if (order == null) return;
+        if (order.UserId != requestor.Id) return;
+
+        await orderService.SetInProgress(order);
+    }
+
+    public async Task<ActionResult<List<OrderEntry>>> GetOrderEntries(Guid orderId)
+    {
+        var order = await orderService.GetByIdAsync(orderId);
+        if (order == null)
+        {
+            return NotFound();
+        }
+        var entries = await orderEntryService.GetByOrder(orderId);
+        return entries;
     }
 }

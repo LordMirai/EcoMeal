@@ -41,6 +41,9 @@ public class OrderEntryRepository(EcoMealDbContext context): IOrderEntryReposito
 
     public async Task<List<OrderEntry>> GetByOrderAsync(Guid orderId)
     {
-        return await context.OrderEntries.Where(oe => oe.Order.Id == orderId).ToListAsync();
+        return await context.OrderEntries
+            .Include(oe => oe.Package)
+            .Where(oe => oe.Order.Id == orderId)
+            .ToListAsync();
     }
 }
