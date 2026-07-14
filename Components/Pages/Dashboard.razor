@@ -22,7 +22,7 @@
 
 <PageTitle>Dashboard</PageTitle>
 
-<h1>Dashboard</h1>
+<h1>Dashboard - @ActiveTab</h1>
 <hr />
 
 <AuthorizeView>
@@ -38,8 +38,8 @@
                             @onclick='() => SetActiveTab("Overview")'>
                         Overview
                     </button>
-                    <button class="menu-item @(ActiveTab == "ActiveOrders" ? "active" : "")"
-                            @onclick='() => SetActiveTab("ActiveOrders")'>
+                    <button class="menu-item @(ActiveTab == "Active Orders" ? "active" : "")"
+                            @onclick='() => SetActiveTab("Active Orders")'>
                         Orders (@(activeOrders?.Count ?? 0))
                     </button>
                     <button class="menu-item @(ActiveTab == "Wallet" ? "active" : "")"
@@ -81,16 +81,16 @@
                                 </div>
                                 <div class="metric-card">
                                     <h3>Monitored Operations</h3>
-                                    <p class="metric-value">@(activeOrders?.Count ?? 0) Active Orders</p>
+                                    <p class="metric-value">@(activeOrders?.Count ?? 0) Registered Orders</p>
                                 </div>
                             </section>
                             <div class="panel-card hint-box text-light">
                                 <p>Select a tab from the left sidebar or click below to see orders.</p>
-                                <button class="btn-primary" @onclick='() => SetActiveTab("ActiveOrders")'>View Active Tracking</button>
+                                <button class="btn-primary" @onclick='() => SetActiveTab("Active Orders")'>View Active Tracking</button>
                             </div>
                         </div>
                     }
-                    else if (ActiveTab == "ActiveOrders")
+                    else if (ActiveTab == "Active Orders")
                     {
                         <div class="tab-panel">
                             <div class="panel-card">
@@ -283,6 +283,7 @@
     private void SetActiveTab(string tabName)
     {
         ActiveTab = tabName;
+        StateHasChanged();
     }
 
     private void AdjustFunds(decimal amount)
