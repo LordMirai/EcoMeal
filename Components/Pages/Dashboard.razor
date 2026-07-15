@@ -1,8 +1,6 @@
 ﻿@page "/dashboard"
 @rendermode InteractiveServer
 
-@using Bogus
-@using EcoMeal.Constants;
 @using EcoMeal.Entities;
 @using EcoMeal.Services;
 @using EcoMeal.Controllers;
@@ -10,13 +8,14 @@
 @using Microsoft.AspNetCore.Authorization;
 @using Microsoft.AspNetCore.Components.Authorization;
 @using Microsoft.AspNetCore.Identity;
-@using Microsoft.EntityFrameworkCore;
 
 @inject AuthenticationStateProvider AuthStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject UserContext userContext
 @inject OrderController orderController
 @inject IOrderEntryService orderEntryService
+@inject WalletController walletController
+@inject IWalletService walletService
 
 @attribute [Authorize]
 
@@ -114,9 +113,9 @@
                                                         <span class="fs-5 fw-bold text-light font-monospace">@order.OrderNumber</span>
                                                         @if (order.Business != null)
                                                         {
-                                                            <span class="text-secondary small">at 
+                                                            <span class="text-secondary small">
+                                                                at
                                                                 <a class="fw-bold text-light link-offset-2 link-offset-3-hover link-underline-light link-underline-opacity-0 link-underline-opacity-75-hover" href="/catalog/@order.Business.Id" target="_blank">
-                                                                    @*It is absolutely ridiculous how many things one has to put in a class for the thing to get underlined when hovered... ^^^^*@
                                                                     @order.Business.Name <i class="bi bi-box-arrow-up-right"></i>
                                                                 </a>
                                                             </span>
@@ -177,9 +176,29 @@
                                 </div>
 
                                 <div class="wallet-actions">
-                                    <button class="btn-action success" @onclick="() => AdjustFunds(50)">+ Deposit $50.00</button>
-                                    <button class="btn-action success" @onclick="() => AdjustFunds(100)">+ Deposit $100.00</button>
-                                    <button class="btn-action danger" @onclick="ResetLedger">Wipe Clear Local Storage Ledger</button>
+                                    <button class="btn-action success" @onclick="() => AdjustFunds(50.00m)">+ Deposit $50.00</button>
+                                    <button class="btn-action success" @onclick="() => AdjustFunds(100.00m)">+ Deposit $100.00</button>
+                                </div>
+
+                                <hr class="border-secondary my-4" />
+
+                                @* Custom Deposit Form *@
+                                <div class="custom-deposit-box mt-3">
+                                    <label class="text-secondary small mb-2 d-block">Custom Deposit (Max $10,000.00)</label>
+                                    <div class="input-group" style="max-width: 320px;">
+                                        <span class="input-group-text bg-dark text-light border-secondary">$</span>
+                                        <input type="number" class="form-control bg-dark text-light border-secondary"
+                                               @bind="customAmountInput"
+                                               placeholder="0.00"
+                                               min="0.01"
+                                               max="10000.00"
+                                               step="0.01" />
+                                        <button class="btn btn-success fw-semibold" @onclick="DepositCustomFunds">Deposit</button>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(errorMessage))
+                                    {
+                                        <span class="text-danger small mt-1.5 d-block">@errorMessage</span>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -201,16 +220,23 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach (var tx in Transactions)
+                                            @if (dbTransactions != null)
                                             {
-                                                <tr>
-                                                    <td><code>@tx.TxId</code></td>
-                                                    <td><span class="badge badge-@tx.Type.ToLower()">@tx.Type</span></td>
-                                                    <td>@tx.Description</td>
-                                                    <td class="@(tx.Amount >= 0 ? "text-success" : "text-danger")">
-                                                        @(tx.Amount >= 0 ? "+" : "")@tx.Amount.ToString("F2")
-                                                    </td>
-                                                </tr>
+                                                @foreach (var tx in dbTransactions)
+                                                {
+                                                    <tr>
+                                                        <td><code>@tx.Id.ToString().Substring(0, 8).ToUpper()</code></td>
+                                                        <td>
+                                                            <span class="badge badge-@(tx.Amount >= 0 ? "deposit" : "purchase")">
+                                                                @(tx.Amount >= 0 ? "Deposit" : "Purchase")
+                                                            </span>
+                                                        </td>
+                                                        <td>@tx.Description</td>
+                                                        <td class="@(tx.Amount >= 0 ? "text-success" : "text-danger")">
+                                                            @(tx.Amount >= 0 ? "+" : "")$@tx.Amount.ToString("F2")
+                                                        </td>
+                                                    </tr>
+                                                }
                                             }
                                         </tbody>
                                     </table>
@@ -226,20 +252,15 @@
 
 @code {
     private string ActiveTab { get; set; } = "Overview";
-    private decimal CurrentBalance { get; set; } = 150.00m;
+    private Wallet? userWallet;
+    private decimal CurrentBalance => userWallet?.Balance ?? 0.00m;
     private bool isLoaded = false;
 
     private ApplicationUser? user;
     private List<Order>? activeOrders;
     private Dictionary<Guid, List<OrderEntry>> orderEntriesMap = new();
 
-    private Faker faker = new Faker();
-
-    private List<LedgerRow> Transactions = new()
-    {
-        new LedgerRow { TxId = "#TX-89A2F", Type = "Deposit", Description = "Injected Account Balance allocation via Service Portal", Amount = 50.00m },
-        new LedgerRow { TxId = "#TX-74B1C", Type = "Purchase", Description = "Asset Package Assignment Procurement", Amount = -12.50m }
-    };
+    private List<WalletTransaction>? dbTransactions;
 
     protected override async Task OnInitializedAsync()
     {
@@ -252,6 +273,22 @@
         user = await userContext.GetLocalUserAsync();
         if (user is null)
             return;
+
+        if (Guid.TryParse(user.Id, out var userId))
+        {
+            var walletResult = await walletController.GetUserWallet(userId);
+            Console.WriteLine("Frontend wallet fetch result: " + (walletResult != null ? "Success" : "No wallet found"));
+
+            userWallet = walletResult?.Value;
+
+            Console.WriteLine("Wallet true value: " + (userWallet != null ? "Exists!!!\n\n" : "Null. May your soul rest in pieces, Mirai.\n\n"));
+
+            if (userWallet != null)
+            {
+                var txList = await walletService.GetTransactionHistoryAsync(userWallet.Id);
+                dbTransactions = txList?.ToList() ?? new List<WalletTransaction>();
+            }
+        }
 
         var result = await orderController.GetUserOrders(user);
         activeOrders = result?.Value;
@@ -286,29 +323,40 @@
         StateHasChanged();
     }
 
-    private void AdjustFunds(decimal amount)
+    private async Task AdjustFunds(decimal amount)
     {
-        CurrentBalance += amount;
-        Transactions.Insert(0, new LedgerRow
+        if (userWallet == null) return;
+
+        var successResult = await walletController.AdjustBalance(userWallet.Id, amount, "Injected Account Balance allocation via Service Portal");
+
+        if (successResult?.Value == true)
         {
-            TxId = $"#TX-{faker.Random.Hash(6, true)}",
-            Type = "Deposit",
-            Description = "Injected Account Balance allocation via Service Portal",
-            Amount = amount
-        });
+            var txs = await walletService.GetTransactionHistoryAsync(userWallet.Id);
+            dbTransactions = txs?.ToList() ?? new List<WalletTransaction>();
+        }
     }
 
-    private void ResetLedger()
-    {
-        CurrentBalance = 150.00m;
-        Transactions.Clear();
-    }
+    private decimal? customAmountInput; // for funds
+    private string? errorMessage;
 
-    public class LedgerRow
+    private async Task DepositCustomFunds()
     {
-        public string TxId { get; set; } = string.Empty;
-        public string Type { get; set; } = string.Empty; // Deposit or Purchase
-        public string Description { get; set; } = string.Empty;
-        public decimal Amount { get; set; }
+        errorMessage = null;
+
+        if (customAmountInput == null || customAmountInput <= 0)
+        {
+            errorMessage = "Please enter a valid positive amount.";
+            return;
+        }
+
+        if (customAmountInput > 10000.00m)
+        {
+            errorMessage = "Deposits are capped at $10,000.00 at a time.";
+            return;
+        }
+
+        decimal amountToDeposit = customAmountInput.Value;
+        await AdjustFunds(amountToDeposit);
+        customAmountInput = null;
     }
 }

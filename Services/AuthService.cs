@@ -1,17 +1,13 @@
 ﻿using EcoMeal.Constants;
 using EcoMeal.Controllers;
 using EcoMeal.Entities;
-using EcoMeal.Events;
 using EcoMeal.Repositories.Interfaces;
-using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.Data;
-using Microsoft.EntityFrameworkCore;
 
 
 namespace EcoMeal.Services;
 
-public class AuthService(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, IMediator mediator) : IAuthService
+public class AuthService(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, IWalletService walletService) : IAuthService
 {
     public async Task<SignInResult> LoginAsync(EcoLoginRequest loginRequest)
     {
@@ -54,7 +50,7 @@ public class AuthService(SignInManager<ApplicationUser> signInManager, UserManag
         var result = await userManager.CreateAsync(newUser, registerRequest.Password);
         if (result.Succeeded)
         {
-            await mediator.Publish(new UserCreatedEvent(newUser));
+            await walletService.CreateWallet(Guid.Parse(newUser.Id));
 
             await userManager.AddToRoleAsync(newUser, AppRoles.User);
             await signInManager.SignInAsync(newUser, isPersistent: false);

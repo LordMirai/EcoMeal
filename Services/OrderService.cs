@@ -1,10 +1,9 @@
 ﻿using EcoMeal.Entities;
 using EcoMeal.Repositories.Interfaces;
-using Bogus;
 
 namespace EcoMeal.Services;
 
-public class OrderService(IOrderRepository orderRepository, IOrderStatusRepository orderStatusRepository, IBusinessService businessService) : IOrderService
+public class OrderService(IOrderRepository orderRepository, IOrderStatusRepository orderStatusRepository) : IOrderService
 {
     public async Task<List<Order>> GetAllAsync()
     {

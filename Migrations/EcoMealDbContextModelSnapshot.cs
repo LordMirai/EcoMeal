@@ -123,7 +123,7 @@ namespace EcoMeal.Migrations
 
                     b.HasIndex("BusinessTypeId");
 
-                    b.ToTable("Businesses");
+                    b.ToTable("Businesses", (string)null);
                 });
 
             modelBuilder.Entity("EcoMeal.Entities.BusinessType", b =>
@@ -138,7 +138,7 @@ namespace EcoMeal.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("BusinessTypes");
+                    b.ToTable("BusinessTypes", (string)null);
                 });
 
             modelBuilder.Entity("EcoMeal.Entities.Order", b =>
@@ -175,7 +175,7 @@ namespace EcoMeal.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", (string)null);
                 });
 
             modelBuilder.Entity("EcoMeal.Entities.OrderEntry", b =>
@@ -199,7 +199,7 @@ namespace EcoMeal.Migrations
 
                     b.HasIndex("PackageId");
 
-                    b.ToTable("OrderEntries");
+                    b.ToTable("OrderEntries", (string)null);
                 });
 
             modelBuilder.Entity("EcoMeal.Entities.OrderStatus", b =>
@@ -216,7 +216,7 @@ namespace EcoMeal.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("OrderStatuses");
+                    b.ToTable("OrderStatuses", (string)null);
                 });
 
             modelBuilder.Entity("EcoMeal.Entities.Package", b =>
@@ -264,7 +264,7 @@ namespace EcoMeal.Migrations
 
                     b.HasIndex("PackageTypeID");
 
-                    b.ToTable("Packages");
+                    b.ToTable("Packages", (string)null);
                 });
 
             modelBuilder.Entity("EcoMeal.Entities.PackageType", b =>
@@ -279,7 +279,7 @@ namespace EcoMeal.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PackageTypes");
+                    b.ToTable("PackageTypes", (string)null);
                 });
 
             modelBuilder.Entity("EcoMeal.Entities.Wallet", b =>
@@ -302,7 +302,7 @@ namespace EcoMeal.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Wallets");
+                    b.ToTable("Wallets", (string)null);
                 });
 
             modelBuilder.Entity("EcoMeal.Entities.WalletTransaction", b =>
@@ -328,7 +328,7 @@ namespace EcoMeal.Migrations
 
                     b.HasIndex("WalletId");
 
-                    b.ToTable("WalletTransactions");
+                    b.ToTable("WalletTransactions", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

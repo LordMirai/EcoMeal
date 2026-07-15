@@ -5,25 +5,39 @@ namespace EcoMeal.Services;
 
 public class WalletService(IWalletRepository walletRepository) : IWalletService
 {
-    public async Task CreateWallet(ApplicationUser user)
+    public async Task CreateWallet(Guid userId)
     {
-        if (user == null)
-            return;
-
         var initialWallet = new Wallet
         {
             Id = Guid.NewGuid(),
-            User = user,
+            UserId = userId.ToString(),
             Balance = 0.00m
         };
 
+        Console.WriteLine($"Creating wallet for user '{userId}'.");
+
         await walletRepository.AddAsync(initialWallet);
         await walletRepository.SaveChangesAsync();
+
+        await CreateTransactionAsync(initialWallet, 0.00m, "Account Creation");
     }
 
-    public async Task<Wallet?> GetUserWallet(Guid userId)
+    public async Task EnsureWalletExists(Guid userId)
     {
-        return await walletRepository.GetWalletByUserId(userId);
+        var existingWallet = await GetUserWallet(userId);
+        if (existingWallet == null)
+        {
+            Console.WriteLine("\n\n'Ensure' found NO wallet for user.\n\n");
+            await CreateWallet(userId);
+        }
+    }
+
+    public async Task<Wallet?> GetUserWallet(Guid userId, bool expectAdmin = false)
+    {
+        Wallet? wallet = await walletRepository.GetWalletByUserId(userId, expectAdmin);
+        Console.WriteLine($"\nService says hi. Wallet here is {wallet}");
+        
+        return wallet;
     }
 
     public async Task<Wallet?> GetWalletById(Guid walletId)
@@ -33,7 +47,27 @@ public class WalletService(IWalletRepository walletRepository) : IWalletService
 
     public async Task<bool> ChangeBalanceAsync(Guid walletId, decimal amount, string description)
     {
-        return await walletRepository.ChangeBalanceAsync(walletId, amount, description);
+        var wallet = await GetWalletById(walletId);
+        if (wallet == null)
+            return false;
+
+        if (amount < 0 && wallet.Balance < Math.Abs(amount))
+            return false;
+
+        wallet.Balance += amount;
+
+        var transaction = new WalletTransaction
+        {
+            Id = Guid.NewGuid(),
+            Wallet = wallet,
+            Amount = amount,
+            Timestamp = DateTime.UtcNow,
+            Description = description
+        };
+
+        await walletRepository.AddTransactionAsync(transaction);
+        await walletRepository.SaveChangesAsync();
+        return true;
     }
 
     public async Task<IEnumerable<WalletTransaction>> GetTransactionHistoryAsync(Guid walletId)
@@ -46,21 +80,37 @@ public class WalletService(IWalletRepository walletRepository) : IWalletService
         await walletRepository.SaveChangesAsync();
     }
 
-    public async Task<bool> UserCanAfford(ApplicationUser user, decimal amount)
+    public async Task<bool> UserCanAfford(Guid userId, decimal amount)
     {
-        Guid id;
-        try
-        {
-            id = Guid.Parse(user.Id);
-        }
-        catch (FormatException)
-        {
-            return false;
-        }
-
-        var wallet = await GetUserWallet(id);
+        var wallet = await GetUserWallet(userId);
         if (wallet == null)
             return false;
         return wallet.Balance >= amount;
+    }
+
+
+    public async Task<WalletTransaction?> CreateTransactionAsync(Wallet wallet, decimal amount, string description)
+    {
+        if (wallet == null)
+        {
+            Console.WriteLine($"\nERR: Tried to create a transaction on a null wallet.");
+            return null;
+        }
+
+        var transaction = new WalletTransaction
+        {
+            Id = Guid.NewGuid(),
+            Wallet = wallet,
+            Amount = amount,
+            Timestamp = DateTime.UtcNow,
+            Description = string.IsNullOrWhiteSpace(description) ? "Wallet Transaction" : description
+        };
+
+        Console.WriteLine($"Logging wallet transaction of {amount:C} for wallet '{wallet.Id}'.");
+
+        await walletRepository.AddTransactionAsync(transaction);
+        await walletRepository.SaveChangesAsync();
+
+        return transaction;
     }
 }

@@ -63,4 +63,10 @@ public class UserContext(
         var userPrincipal = authState.User;
         return userPrincipal.Identity is { IsAuthenticated: true };
     }
+
+    public async Task<ApplicationUser?> GetUserById(Guid id)
+    {
+        using var context = await contextFactory.CreateDbContextAsync();
+        return await context.Set<ApplicationUser>().FindAsync(id.ToString());
+    }
 }

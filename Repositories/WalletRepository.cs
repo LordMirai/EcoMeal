@@ -23,36 +23,17 @@ public class WalletRepository(EcoMealDbContext context) : IWalletRepository
             .FirstOrDefaultAsync(w => w.Id == walletId && !w.IsDeleted);
     }
 
-    public async Task<Wallet?> GetWalletByUserId(Guid userId)
+    public async Task<Wallet?> GetWalletByUserId(Guid userId, bool includeDeleted = false)
     {
         var userIdString = userId.ToString();
-        return await context.Wallets
-            .FirstOrDefaultAsync(w => w.User.Id == userIdString && !w.IsDeleted);
-    }
-
-    public async Task<bool> ChangeBalanceAsync(Guid walletId, decimal amount, string description)
-    {
-        var wallet = await GetById(walletId);
-        if (wallet == null)
-            return false;
-
-        if (amount < 0 && wallet.Balance < Math.Abs(amount))
-            return false;
-
-        wallet.Balance += amount;
-
-        var transaction = new WalletTransaction
+        Console.WriteLine($"\n\nFrom Repo! Fetch wallet for user '{userIdString}' (expectAdmin={includeDeleted})\n\n");
+        var query = context.Wallets.AsQueryable();
+        query = query.Where(w => w.UserId == userIdString);
+        if (!includeDeleted)
         {
-            Id = Guid.NewGuid(),
-            Wallet = wallet,
-            Amount = amount,
-            Timestamp = DateTime.UtcNow,
-            Description = description
-        };
-
-        await context.WalletTransactions.AddAsync(transaction);
-        await context.SaveChangesAsync();
-        return true;
+            query = query.Where(w => !w.IsDeleted);
+        }
+        return await query.FirstOrDefaultAsync();
     }
 
     public async Task<IEnumerable<WalletTransaction>> GetTransactions(Guid walletId)
@@ -67,6 +48,13 @@ public class WalletRepository(EcoMealDbContext context) : IWalletRepository
     {
         var userIdString = userId.ToString();
         return await context.Wallets
-            .FirstOrDefaultAsync(w => w.User.Id == userIdString && !w.IsDeleted);
+            .Where(w => w.UserId == userIdString && !w.IsDeleted)
+            .FirstOrDefaultAsync();
+    }
+
+
+    public async Task AddTransactionAsync(WalletTransaction transaction)
+    {
+        await context.WalletTransactions.AddAsync(transaction);
     }
 }

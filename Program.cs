@@ -60,6 +60,7 @@ builder.Services.AddScoped<BusinessController>();
 builder.Services.AddScoped<PackageController>();
 builder.Services.AddScoped<AuthController>();
 builder.Services.AddScoped<OrderController>();
+builder.Services.AddScoped<WalletController>();
 
 builder.Services.AddScoped<UserContext>();
 
