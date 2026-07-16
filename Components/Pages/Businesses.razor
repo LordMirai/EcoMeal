@@ -55,13 +55,13 @@
                     </Authorized>
                 </AuthorizeView>
 
-                @* Query Filtering *@
+                @* Query Filtering (Reset page on type to avoid empty page bugs) *@
                 <div class="col-md-4">
                     <input type="text"
                            class="form-control shadow-sm"
                            placeholder="Search by Name"
-                           @bind="searchQuery"
-                           @bind:event="oninput" />
+                           value="@searchQuery"
+                           @oninput="OnSearchInput" />
                 </div>
 
                 @* Display Settings *@
@@ -92,17 +92,19 @@
                             }
                         </div>
 
-                        <div class="form-check form-switch mb-0 ms-2">
-                            <input type="checkbox" id="includeDel" class="form-check-input" @bind-value="includeDeleted" @bind-value:after="Refresh" />
-                            <label for="includeDel" class="form-check-label small fw-semibold text-secondary">Include Deleted</label>
-                        </div>
+                        <AuthorizeView Roles="admin">
+                            <Authorized>
+                                <div class="form-check form-switch mb-0 ms-2">
+                                    <input type="checkbox" id="includeDel" class="form-check-input" @bind-value="includeDeleted" @bind-value:after="Refresh" />
+                                    <label for="includeDel" class="form-check-label small fw-semibold text-secondary">Include Deleted</label>
+                                </div>
+                            </Authorized>
+                        </AuthorizeView>
                     }
                 </div>
             </div>
         </div>
     </div>
-
-
 
     @if (businesses == null)
     {
@@ -121,9 +123,8 @@
     }
     else
     {
-        @* We're making it pretty with bootstrap cards :D *@
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-            @foreach (var business in FilteredBusinesses)
+            @foreach (var business in PaginatedBusinesses)
             {
                 var currentId = business.Id;
                 bool isExpanded = expandedBusinessId == currentId;
@@ -162,17 +163,6 @@
                                 }
                             </div>
 
-
-                            @* Removing ID for security *@
-                            @*
-                            @if (columns["Id"])
-                            {
-                                <div class="mb-2 bg-light p-2 rounded border clickable" @onclick="() => Copy(business.Id)" title="Click to copy Guid">
-                                    <code class="text-muted small ps-1" style="font-size: 0.75rem;">@business.Id</code>
-                                </div>
-                            }
-                            *@
-
                             @if (columns["Description"])
                             {
                                 <p class="text-secondary small flex-grow-1 mb-3 text-break @(isExpanded ? "" : "text-truncate-3")" style="font-size: 0.875rem;">
@@ -187,7 +177,6 @@
                                 </p>
                             }
 
-                            @* Actions *@
                             @if (columns["Action"])
                             {
                                 <div class="d-flex gap-2 mt-auto border-top pt-3 w-100">
@@ -221,6 +210,35 @@
                 </div>
             }
         </div>
+
+        @* Pagination Navigation UI Control Block *@
+        @if (TotalPages > 1)
+        {
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <span class="text-muted small">
+                    Showing <b>@(((CurrentPage - 1) * PageSize) + 1)</b> to
+                    <b>@(Math.Min(CurrentPage * PageSize, FilteredBusinesses.Count))</b> of
+                    <b>@FilteredBusinesses.Count</b> listings
+                </span>
+                <nav aria-label="Business pagination navigation">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+                            <button class="page-item page-link" @onclick="() => ChangePage(CurrentPage - 1)">Previous</button>
+                        </li>
+                        @for (int idx = 1; idx <= TotalPages; idx++)
+                        {
+                            var targetPageIdx = idx;
+                            <li class="page-item @(CurrentPage == targetPageIdx ? "active fw-bold" : "")">
+                                <button class="page-item page-link" @onclick="() => ChangePage(targetPageIdx)">@targetPageIdx</button>
+                            </li>
+                        }
+                        <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
+                            <button class="page-item page-link" @onclick="() => ChangePage(CurrentPage + 1)">Next</button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
     }
 </div>
 
@@ -235,9 +253,12 @@
     private string searchQuery = string.Empty;
     private bool includeDeleted = false;
 
+    // Pagination Settings
+    private int CurrentPage { get; set; } = 1;
+    private const int PageSize = 9;
+
     private Dictionary<string, bool> columns = new()
     {
-        // { "Id", false },
         { "Name", true },
         { "Action", true},
         { "Accronym", true },
@@ -255,6 +276,8 @@
     private async Task Refresh()
     {
         businesses = (await businessController.GetAll(includeDeleted)).Value;
+        // Enforce safe page boundary context on refresh alterations
+        ChangePage(CurrentPage);
     }
 
     private async Task GenerateBusiness()
@@ -276,7 +299,7 @@
             await BusinessRepo.AddAsync(business);
         }
         await BusinessRepo.SaveChangesAsync();
-        await Refresh(); // Keep UI in sync automatically on generation
+        await Refresh();
     }
 
     private void Copy(object? content)
@@ -307,6 +330,29 @@
                             b.Id.ToString().Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
+    }
+
+    private IEnumerable<Business> PaginatedBusinesses
+    {
+        get
+        {
+            return FilteredBusinesses
+                .Skip((CurrentPage - 1) * PageSize)
+                .Take(PageSize);
+        }
+    }
+
+    private int TotalPages => (int)Math.Ceiling((double)FilteredBusinesses.Count / PageSize);
+
+    private void ChangePage(int targetPage)
+    {
+        CurrentPage = Math.Clamp(targetPage, 1, Math.Max(1, TotalPages));
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? string.Empty;
+        CurrentPage = 1; // Always jump back to page 1 when filtering listings
     }
 
     private async Task Delete(Guid id)
