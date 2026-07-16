@@ -41,7 +41,7 @@ public class OrderRepository(EcoMealDbContext context): IOrderRepository
         await context.SaveChangesAsync();
     }
 
-    public async Task<List<Order>> GetUserOrders(ApplicationUser user)
+    public async Task<List<Order>> GetUserOrders(ApplicationUser user, bool includeDeleted = false)
     {
         return await context.Orders
             .Include(o => o.Business)
@@ -49,6 +49,7 @@ public class OrderRepository(EcoMealDbContext context): IOrderRepository
             .Include(o => o.OrderEntries) // todo: look ts up later, wtf
             .ThenInclude(o => o.Package)
             .Where(o => o.User.Id == user.Id)
+            .Where(o => includeDeleted || !o.IsDeleted)
             .ToListAsync();
     }
 

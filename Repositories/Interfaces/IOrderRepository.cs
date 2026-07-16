@@ -10,7 +10,7 @@ public interface IOrderRepository
     public Task DeleteAsync(Guid id);
     public Task<Order?> GetByIdAsync(Guid id);
     public Task SaveChangesAsync();
-    public Task<List<Order>> GetUserOrders(ApplicationUser user);
+    public Task<List<Order>> GetUserOrders(ApplicationUser user, bool includeDeleted = false);
     public Task<List<Order>> GetPendingOrders(ApplicationUser user, OrderStatus pendingStatus);
     public Task<List<Order>> GetPendingOrdersForBusiness(Guid userId, Business business, OrderStatus pendingStatus);
 }

@@ -15,9 +15,9 @@ public class OrderController(IOrderService orderService, IBusinessService busine
         return orders;
     }
 
-    public async Task<ActionResult<List<Order>>> GetUserOrders(ApplicationUser user)
+    public async Task<ActionResult<List<Order>>> GetUserOrders(ApplicationUser user, bool includeDeleted = false)
     {
-        return await orderService.GetUserOrdersAsync(user);
+        return await orderService.GetUserOrdersAsync(user, includeDeleted);
     }
 
     public async Task<ActionResult<List<Order>>> GetPendingOrders(ApplicationUser user)
@@ -150,16 +150,17 @@ public class OrderController(IOrderService orderService, IBusinessService busine
         return await orderService.GetStatusesAsync();
     }
 
-    public async Task UpdateStatus(Guid orderId, Guid statusId)
+    public async Task UpdateStatus(Guid orderId, int statusId)
     {
         var order = await orderService.GetByIdAsync(orderId);
         if (order == null)
             return;
 
-        var status = await orderService.GetStatusByNameAsync(statusId.ToString());
+        var status = await orderService.GetStatusByIdAsync(statusId);
         if (status == null)
             return;
 
+        Console.WriteLine("Checks complete, writing to database.");
         order.Status = status;
         await orderService.UpdateAsync(order);
     }

@@ -333,9 +333,12 @@
 
     private async Task UpdateOrderStatus(Order order, string? statusIdValue)
     {
+        Console.WriteLine($"Updating order {order?.Id} status to {statusIdValue}");
         if (order == null || string.IsNullOrEmpty(statusIdValue)) return;
-        if (Guid.TryParse(statusIdValue, out var statusId))
+        Console.WriteLine("So they're not null, cool.");
+        if (int.TryParse(statusIdValue, out int statusId))
         {
+            Console.WriteLine("valid id, calling controller...");
             await orderController.UpdateStatus(order.Id, statusId);
             await LoadOrders();
         }

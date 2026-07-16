@@ -120,7 +120,7 @@
                                                             </span>
                                                         }
                                                     </div>
-                                                    <span class="badge bg-info text-dark text-uppercase fw-bold px-2.5 py-1.5" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                                                    <span class="badge @statusColoring.GetValueOrDefault(order.Status?.Name ?? "Unknown", "bg-danger text-light") text-uppercase fw-bold px-2.5 py-1.5" style="font-size: 0.75rem; letter-spacing: 0.5px;">
                                                         @(order.Status?.Name ?? "Unknown")
                                                     </span>
                                                 </div>
@@ -265,6 +265,17 @@
     {
         await LoadDashboardData();
     }
+
+    Dictionary<string, string> statusColoring = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "Unknown", "bg-dark text-light" },
+            { "Pending", "bg-warning text-dark" },
+            { "Reserved", "bg-warning text-dark" },
+            { "In Progress", "bg-info text-dark" },
+            { "Completed", "bg-success text-light" },
+            { "Errored", "bg-danger text-light" },
+            { "Cancelled", "bg-black text-danger" }
+        };
 
     private async Task LoadDashboardData()
     {

@@ -36,9 +36,9 @@ public class OrderService(IOrderRepository orderRepository, IOrderStatusReposito
         await orderRepository.SaveChangesAsync();
     }
 
-    public async Task<List<Order>> GetUserOrdersAsync(ApplicationUser user)
+    public async Task<List<Order>> GetUserOrdersAsync(ApplicationUser user, bool includeDeleted = false)
     {
-        return await orderRepository.GetUserOrders(user);
+        return await orderRepository.GetUserOrders(user, includeDeleted);
     }
 
     public async Task<List<Order>> GetPendingOrders(ApplicationUser user)
@@ -63,6 +63,11 @@ public class OrderService(IOrderRepository orderRepository, IOrderStatusReposito
     public async Task<OrderStatus> GetStatusByNameAsync(string statusName)
     {
         return await orderStatusRepository.GetStatusByNameAsync(statusName);
+    }
+
+    public async Task<OrderStatus> GetStatusByIdAsync(int id)
+    {
+        return await orderStatusRepository.GetStatusByIdAsync(id);
     }
 
     public async Task<List<OrderStatus>> GetStatusesAsync()
