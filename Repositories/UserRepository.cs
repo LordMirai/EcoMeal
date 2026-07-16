@@ -19,7 +19,7 @@ public class UserRepository(EcoMealDbContext context)
 
     public async Task UpdateAsync(ApplicationUser user)
     {
-        // todo
+        context.Users.Update(user);
     }
 
     public async Task<ApplicationUser?> GetByIdAsync(Guid id)

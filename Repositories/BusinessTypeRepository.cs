@@ -20,7 +20,7 @@ public class BusinessTypeRepository(EcoMealDbContext context): IBusinessTypeRepo
 
     public async Task UpdateAsync(BusinessType businessType)
     {
-        // todo
+        context.BusinessTypes.Update(businessType);
     }
 
     public async Task<BusinessType?> GetByIdAsync(Guid id)

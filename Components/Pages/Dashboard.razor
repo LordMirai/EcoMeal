@@ -13,7 +13,6 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject UserContext userContext
 @inject OrderController orderController
-@inject IOrderEntryService orderEntryService
 @inject WalletController walletController
 @inject IWalletService walletService
 
@@ -298,7 +297,7 @@
             orderEntriesMap.Clear();
             foreach (var order in activeOrders)
             {
-                var entries = await orderEntryService.GetByOrder(order.Id);
+                var entries = order.OrderEntries;
                 orderEntriesMap[order.Id] = entries ?? new List<OrderEntry>();
             }
         }
@@ -327,7 +326,7 @@
     {
         if (userWallet == null) return;
 
-        var successResult = await walletController.AdjustBalance(userWallet.Id, amount, "Injected Account Balance allocation via Service Portal");
+        var successResult = await walletController.AdjustBalance(userWallet.Id, amount, "Added funds via Service Portal");
 
         if (successResult?.Value == true)
         {

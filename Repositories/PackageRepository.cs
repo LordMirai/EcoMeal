@@ -19,7 +19,7 @@ public class PackageRepository(EcoMealDbContext context): IPackageRepository
 
     public async Task UpdateAsync(Package package)
     {
-        // todo
+        context.Packages.Update(package);
     }
 
     public async Task<Package?> GetByIdAsync(Guid id)

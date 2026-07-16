@@ -23,6 +23,7 @@ public class OrderService(IOrderRepository orderRepository, IOrderStatusReposito
     public async Task UpdateAsync(Order order)
     {
         await orderRepository.UpdateAsync(order);
+        await orderRepository.SaveChangesAsync();
     }
 
     public async Task<Order?> GetByIdAsync(Guid id)
@@ -64,11 +65,27 @@ public class OrderService(IOrderRepository orderRepository, IOrderStatusReposito
         return await orderStatusRepository.GetStatusByNameAsync(statusName);
     }
 
+    public async Task<List<OrderStatus>> GetStatusesAsync()
+    {
+        return await orderStatusRepository.GetStatusesAsync();
+    }
+
     public async Task SetInProgress(Order order)
     {
         var inProgress = await orderStatusRepository.GetStatusByNameAsync("In Progress");
         order.Status = inProgress;
         await orderRepository.UpdateAsync(order);
         await orderRepository.SaveChangesAsync();
+    }
+
+    public async Task<decimal> CalculatePrice(Order order)
+    {
+        float totalPrice = 0;
+        foreach (var item in order.OrderEntries)
+        {
+            totalPrice += item.Quantity * item.Package.Price;
+        }
+
+        return (decimal)totalPrice;
     }
 }

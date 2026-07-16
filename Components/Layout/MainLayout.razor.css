@@ -96,3 +96,69 @@ main {
         right: 0.75rem;
         top: 0.5rem;
     }
+
+
+
+/* Custom CSS to make the app look pretty :D */
+:root {
+    --bg-primary: #070b19; /* The very deep dark navy base */
+    --bg-surface: #0e1726; /* Lighter card/container navy background */
+    --border-color: #1e293b; /* Thin subtle border lines */
+
+    --text-primary: #f8fafc; /* off-white */
+    --text-muted: #64748b; /* grey for subtext */
+
+    --accent-blue: #2563eb; /* Electric Blue */
+    --border-blue: #3b82f6; /* Electric border outline */
+}
+
+/* Base Body Style Override */
+body, .main {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* --- SIDEBAR NAV OVERRIDES --- */
+.nav-scrollable {
+    background-color: #0b1329 !important;
+}
+
+.nav-link {
+    color: var(--text-muted) !important;
+    font-weight: 500;
+    border: 1px solid transparent;
+}
+
+    .nav-link:hover {
+        color: var(--text-primary) !important;
+        background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    .nav-link.active {
+        background-color: var(--accent-blue) !important;
+        border-color: var(--border-blue) !important;
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+
+
+.eco-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.eco-card-header {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+
+.py-2-5 {
+    padding-top: 0.65rem !important;
+    padding-bottom: 0.65rem !important;
+}

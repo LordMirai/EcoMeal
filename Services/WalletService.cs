@@ -34,10 +34,7 @@ public class WalletService(IWalletRepository walletRepository) : IWalletService
 
     public async Task<Wallet?> GetUserWallet(Guid userId, bool expectAdmin = false)
     {
-        Wallet? wallet = await walletRepository.GetWalletByUserId(userId, expectAdmin);
-        Console.WriteLine($"\nService says hi. Wallet here is {wallet}");
-        
-        return wallet;
+        return await walletRepository.GetWalletByUserId(userId, expectAdmin);
     }
 
     public async Task<Wallet?> GetWalletById(Guid walletId)
@@ -84,7 +81,19 @@ public class WalletService(IWalletRepository walletRepository) : IWalletService
     {
         var wallet = await GetUserWallet(userId);
         if (wallet == null)
+        {
             return false;
+        }
+        return wallet.Balance >= amount;
+    }
+
+    public async Task<bool> CanAfford(Guid walletId, decimal amount)
+    {
+        var wallet = await GetWalletById(walletId);
+        if (wallet == null)
+        {
+            return false;
+        }
         return wallet.Balance >= amount;
     }
 

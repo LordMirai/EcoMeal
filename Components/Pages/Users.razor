@@ -6,14 +6,18 @@
 @using Microsoft.AspNetCore.Authorization;
 @using EcoMeal.Constants;
 @using EcoMeal.Entities;
+@using EcoMeal.Controllers;
 @using Microsoft.AspNetCore.Components.Authorization;
 @using Microsoft.AspNetCore.Identity;
 @using EcoMeal.Services;
+@using EcoMeal.Repositories.Interfaces;
 @using Microsoft.EntityFrameworkCore;
 
 @inject AuthenticationStateProvider AuthStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject UserContext userContext
+@inject OrderController orderController
+@inject IOrderService orderService
 
 @attribute [Authorize(Roles = AppRoles.Admin)]
 
@@ -62,10 +66,10 @@
                 <hr class="text-muted opacity-25 my-3" />
 
                 <div class="row g-3">
-                    <div class="col-sm-6">
+                    @* <div class="col-sm-6">
                         <span class="d-block text-muted small fw-semibold text-uppercase tracking-wider">Account Identifier</span>
-                        <code class="text-dark bg-light px-2 py-1 rounded small border d-inline-block mt-1 text-break">@currUser.Id</code>
-                    </div>
+                        @* @* <code class="text-dark bg-light px-2 py-1 rounded small border d-inline-block mt-1 text-break">@currUser.Id</code> 
+                    </div> *@
                     <div class="col-sm-6">
                         <span class="d-block text-muted small fw-semibold text-uppercase tracking-wider">Email Address</span>
                         <span class="text-dark d-block mt-1 fw-medium">@currUser.Email</span>
@@ -73,10 +77,6 @@
                     <div class="col-sm-6">
                         <span class="d-block text-muted small fw-semibold text-uppercase tracking-wider">Username Reference</span>
                         <span class="text-secondary d-block mt-1 font-monospace">@currUser.UserName</span>
-                    </div>
-                    <div class="col-sm-6">
-                        <span class="d-block text-muted small fw-semibold text-uppercase tracking-wider">Security Stamp</span>
-                        <span class="text-secondary small font-monospace d-block mt-1 text-truncate" title="@currUser.SecurityStamp">@currUser.SecurityStamp</span>
                     </div>
                 </div>
             </div>
@@ -160,6 +160,90 @@
             </table>
         </div>
     }
+
+    <hr class="my-4" />
+    @* This part for order mgmt *@
+    <div class="card shadow-sm border-0 rounded-3 bg-white mb-4">
+        <h4>Order Management</h4>
+        <div class="card-header bg-dark text-white p-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="fw-bold mb-1 text-primary">System Order Management</h4>
+                <p class="small mb-0 text-light">Modify system-wide orders, alter statuses, and soft-delete/restore order entities.</p>
+            </div>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="showDeletedSwitch" @bind="showDeleted" @bind:after="LoadOrders" />
+                <label class="form-check-label text-light small" for="showDeletedSwitch">Show Soft-Deleted Orders</label>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            @if (orderList == null)
+            {
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="text-muted small mt-2">Retrieving system orders...</p>
+                </div>
+            }
+            else if (!orderList.Any())
+            {
+                <p class="text-muted text-center py-3">No matching system orders registered in database context.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle table-bordered small">
+                        <thead class="table-light text-secondary text-uppercase" style="font-size: 0.75rem;">
+                            <tr>
+                                <th>Order Code</th>
+                                <th>Client Name</th>
+                                <th>Business Name</th>
+                                <th>Creation Timestamp</th>
+                                <th>Status Designation</th>
+                                <th class="text-center" style="width: 280px;">System Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in orderList)
+                            {
+                                <tr class="@(order.IsDeleted ? "table-danger opacity-75" : "")">
+                                    <td class="font-monospace fw-bold">@order.OrderNumber</td>
+                                    <td>@(order.User?.FullName ?? "Unknown")</td>
+                                    <td>@(order.Business?.Name ?? "Unknown")</td>
+                                    <td>@order.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>
+                                        <select class="form-select form-select-sm"
+                                                value="@order.Status.Id"
+                                                @onchange="(e) => UpdateOrderStatus(order, e.Value?.ToString())"
+                                                disabled="@order.IsDeleted">
+                                            @foreach (var status in orderStatuses)
+                                            {
+                                                <option value="@status.Id">@status.Name</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2 justify-content-center">
+                                            @if (!order.IsDeleted)
+                                            {
+                                                <button class="btn btn-sm btn-outline-danger w-100" @onclick="() => SoftDeleteOrder(order)">
+                                                    <i class="bi bi-trash-fill me-1"></i> Soft Delete
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-sm btn-success w-100 text-white" @onclick="() => RestoreOrder(order)">
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Restore Order
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
 </div>
 
 @code {
@@ -168,6 +252,10 @@
     private List<ApplicationUser>? allUsers;
 
     private List<UserDirectoryRow> userDirectoryList = new();
+
+    private List<Order>? orderList = new();
+    private List<OrderStatus> orderStatuses = new();
+    private bool showDeleted = false;
 
     private class UserDirectoryRow
     {
@@ -189,6 +277,7 @@
             .ToListAsync();
 
         await RefreshUserDirectory();
+        await LoadOrders();
     }
 
     private async Task RefreshUserDirectory()
@@ -233,5 +322,38 @@
         {
             await RefreshUserDirectory();
         }
+    }
+
+    private async Task LoadOrders()
+    {
+        orderList = (await orderController.GetAll()).Value;
+        orderStatuses = await orderController.GetStatuses();
+    }
+
+
+    private async Task UpdateOrderStatus(Order order, string? statusIdValue)
+    {
+        if (order == null || string.IsNullOrEmpty(statusIdValue)) return;
+        if (Guid.TryParse(statusIdValue, out var statusId))
+        {
+            await orderController.UpdateStatus(order.Id, statusId);
+            await LoadOrders();
+        }
+    }
+
+    private async Task SoftDeleteOrder(Order order)
+    {
+        if (order == null) return;
+        order.IsDeleted = true;
+        await orderService.UpdateAsync(order);
+        await LoadOrders();
+    }
+
+    private async Task RestoreOrder(Order order)
+    {
+        if (order == null) return;
+        order.IsDeleted = false;
+        await orderService.UpdateAsync(order);
+        await LoadOrders();
     }
 }

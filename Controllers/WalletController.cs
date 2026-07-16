@@ -15,8 +15,7 @@ public class WalletController(IWalletService walletService) : ControllerBase
         await walletService.EnsureWalletExists(userId);
 
         var wallet = await walletService.GetUserWallet(userId);
-        Console.WriteLine($"\nController says hi. Wallet here is null? {wallet is null}");
-        if (wallet == null) // if this happens, something, somewhere, fucked up bad. <- ha, guess what, it did.
+        if (wallet == null)
         {
             return NotFound("Wallet could not be created or retrieved.");
         }
@@ -33,5 +32,11 @@ public class WalletController(IWalletService walletService) : ControllerBase
             return BadRequest("Could not adjust wallet balance.");
         }
         return true;
+    }
+
+    public async Task<ActionResult<bool>> CanAfford([FromQuery] Guid walletId, [FromQuery] decimal amount)
+    {
+        var canAfford = await walletService.CanAfford(walletId, amount);
+        return canAfford;
     }
 }

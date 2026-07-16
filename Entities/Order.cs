@@ -15,4 +15,5 @@ public class Order
     public required Business Business { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsDeleted { get; set; } = false;
+    public List<OrderEntry> OrderEntries {  get; set; }
 }

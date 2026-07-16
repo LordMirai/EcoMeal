@@ -19,7 +19,7 @@ public class OrderRepository(EcoMealDbContext context): IOrderRepository
 
     public async Task UpdateAsync(Order order)
     {
-        // todo
+        context.Orders.Update(order);
     }
 
     public async Task<Order?> GetByIdAsync(Guid id)
@@ -46,6 +46,8 @@ public class OrderRepository(EcoMealDbContext context): IOrderRepository
         return await context.Orders
             .Include(o => o.Business)
             .Include(o => o.Status)
+            .Include(o => o.OrderEntries) // todo: look ts up later, wtf
+            .ThenInclude(o => o.Package)
             .Where(o => o.User.Id == user.Id)
             .ToListAsync();
     }

@@ -16,5 +16,7 @@ public interface IOrderService
 
     public Task<OrderStatus> GetPendingStatus();
     public Task<OrderStatus> GetStatusByNameAsync(string statusName);
+    public Task<List<OrderStatus>> GetStatusesAsync();
     public Task SetInProgress(Order order);
+    public Task<decimal> CalculatePrice(Order order);
 }

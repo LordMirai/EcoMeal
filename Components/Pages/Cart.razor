@@ -9,6 +9,7 @@
 
 @inject UserContext userContext
 @inject OrderController orderController
+@inject WalletController WalletController
 @inject IOrderEntryService orderEntryService
 @inject NavigationManager NavManager
 
@@ -24,6 +25,21 @@
         </a>
     </div>
     <hr />
+
+    <div class="card border-0 shadow-sm p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted">
+                Go to <a href="/dashboard" class="text-decoration-none text-muted">
+                    Dashboard <i class="bi bi-box-arrow-up-right"></i>
+                    </a> to add funds. 
+                Wallet Balance:
+            </span>
+            @if(userWallet is not null)
+            {
+                <span class="text-success fs-4 fw-bold font-monospace">$@userWallet.Balance.ToString("F2")</span>
+            }
+        </div>
+    </div>
 
     @if (pendingOrders is null || orderEntriesMap is null)
     {
@@ -55,6 +71,14 @@
             You have <span class="fw-semibold text-dark">@pendingOrders.Count</span> pending @(pendingOrders.Count == 1 ? "order" : "orders") in your cart.
         </p>
 
+    @if (cannotAffordOrder)
+    {
+        <div class="alert alert-danger alert-dismissible fw-bold" role="alert" id="alert">
+            @insufficientFundsMessage
+            <button type="button" class="btn-close" @onclick="DismissAlert" aria-label="Close"></button>
+        </div>
+    }
+
         <div class="d-flex flex-column gap-4">
             @foreach (var order in pendingOrders)
             {
@@ -63,13 +87,13 @@
 
                 <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
                     @* Header: Business Information *@
-                    <div class="card-header bg-light border-0 d-flex justify-content-between align-items-center p-3">
+                    <div class="card-header bg-info-subtle border-0 d-flex justify-content-between align-items-center p-3">
                         <div class="d-flex align-items-center gap-3">
                             @if (order.Business != null)
                             {
                                 <img src="@order.Business.ImageURL"
                                      class="rounded-2 object-fit-cover shadow-sm"
-                                     style="width: 45px; height: 45px;"
+                                     style="width: 64px; height: 64px;"
                                      alt="@order.Business.Name Profile" />
                                 <div>
                                     <h5 class="fw-bold text-dark mb-0 fs-6">@order.Business.Name</h5>
@@ -89,7 +113,7 @@
                             <div class="list-group list-group-flush">
                                 @foreach (var entry in entries)
                                 {
-                                    <div class="list-group-item border-0 px-0 d-flex justify-content-between align-items-center">
+                                    <div class="list-group-item border-0 px-0 ms-3 d-flex justify-content-between align-items-center">
                                         <div class="d-flex align-items-center gap-3">
                                             @if (entry.Package != null)
                                             {
@@ -152,10 +176,27 @@
     private Dictionary<Guid, List<OrderEntry>>? orderEntriesMap;
     private bool isProcessing = false;
 
+    private Wallet? userWallet;
+
+    private bool cannotAffordOrder = false;
+    private string insufficientFundsMessage = string.Empty;
+
+    private void InsufficientFundsError(Order order)
+    {
+        cannotAffordOrder = true;
+        insufficientFundsMessage = $"Insufficient funds to submit order {order.OrderNumber} for {order.Business.Name}.";
+    }
+
+    private void DismissAlert()
+    {
+        cannotAffordOrder = false;
+        insufficientFundsMessage = string.Empty;
+    }
 
     protected override async Task OnInitializedAsync()
     {
         await LoadCartData();
+        await LoadWalletData();
     }
 
     private async Task LoadCartData()
@@ -174,12 +215,9 @@
             foreach (var order in pendingOrders)
             {
                 var entries = await orderEntryService.GetByOrder(order.Id);
-                // Console.WriteLine($"Fetched {entries.Count} entries for Order ID: {order.Id}. For sanity, business name is: {order.Business.Name}");
                 orderEntriesMap[order.Id] = entries ?? new List<OrderEntry>();
             }
         }
-
-        Console.WriteLine("\n\nFinished loading cart data!!");
     }
 
     private List<OrderEntry> GetEntriesForOrder(Guid orderId)
@@ -191,15 +229,15 @@
         return new List<OrderEntry>();
     }
 
-    private double CalculateOrderTotal(List<OrderEntry> entries)
+    private decimal CalculateOrderTotal(List<OrderEntry> entries)
     {
         if (entries == null || !entries.Any())
-            return 0.0;
+            return 0.0m;
 
-
-        return entries
+        var sum = entries
             .Where(e => e.Package != null)
             .Sum(e => e.Package.Price * e.Quantity);
+        return (decimal)sum;
     }
 
     private async Task CancelPendingOrder(Guid orderId)
@@ -225,7 +263,34 @@
         isProcessing = true;
         try
         {
+            var calcRes = await orderController.CalculatePrice(orderId);
+            var amount = calcRes.Value;
+
+            var order = (await orderController.GetById(orderId)).Value;
+            if(order is null)
+            {
+                Console.WriteLine("PANIC! ORDER NOT FOUND FOR SOME FUCKING REASON!!");
+                return;
+            }
+
+
+            Console.WriteLine($"Calculated order total: {amount}");
+            
+            var affRes = await WalletController.CanAfford(userWallet.Id, amount);
+            var affordable = affRes.Value;
+
+            if (!affordable)
+            {
+                Console.WriteLine("Insufficient funds to submit order.");
+                InsufficientFundsError(pendingOrders.FirstOrDefault(o => o.Id == orderId));
+                return;
+            }
+
+
+            var transactionMessage = $"Payment for order {order.OrderNumber}";
+            await WalletController.AdjustBalance(userWallet.Id, -amount, transactionMessage);
             await orderController.SubmitOrder(orderId, user);
+
             NavManager.NavigateTo("/dashboard");
         }
         catch (Exception ex)
@@ -237,4 +302,13 @@
             isProcessing = false;
         }
     }
+
+    public async Task LoadWalletData()
+    {
+        if (user is null)
+            return;
+        var result = await WalletController.GetUserWallet(Guid.Parse(user.Id));
+        userWallet = result.Value;
+    }
+
 }

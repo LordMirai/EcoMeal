@@ -103,3 +103,8 @@
         overflow-y: auto;
     }
 }
+
+
+.dark-background {
+    background-color: #0b1329;
+}

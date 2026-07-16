@@ -13,6 +13,7 @@ public interface IWalletService
     public Task SaveChangesAsync();
     public Task<WalletTransaction?> CreateTransactionAsync(Wallet wallet, decimal amount, string description);
     public Task<bool> UserCanAfford(Guid userId, decimal amount);
+    public Task<bool> CanAfford(Guid walletId, decimal amount);
 
 
 }

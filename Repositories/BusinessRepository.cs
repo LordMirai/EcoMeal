@@ -25,7 +25,7 @@ public class BusinessRepository(EcoMealDbContext context) : IBusinessRepository
 
     public void UpdateAsync(Business business)
     {
-        // todo
+        context.Businesses.Update(business);
     }
 
     public async Task<Business?> GetByIdAsync(Guid id, bool includeDeleted = false)

@@ -26,14 +26,14 @@ public class WalletRepository(EcoMealDbContext context) : IWalletRepository
     public async Task<Wallet?> GetWalletByUserId(Guid userId, bool includeDeleted = false)
     {
         var userIdString = userId.ToString();
-        Console.WriteLine($"\n\nFrom Repo! Fetch wallet for user '{userIdString}' (expectAdmin={includeDeleted})\n\n");
         var query = context.Wallets.AsQueryable();
         query = query.Where(w => w.UserId == userIdString);
         if (!includeDeleted)
         {
             query = query.Where(w => !w.IsDeleted);
         }
-        return await query.FirstOrDefaultAsync();
+        var wallet = await query.FirstOrDefaultAsync();
+        return wallet;
     }
 
     public async Task<IEnumerable<WalletTransaction>> GetTransactions(Guid walletId)

@@ -17,8 +17,7 @@ public class OrderController(IOrderService orderService, IBusinessService busine
 
     public async Task<ActionResult<List<Order>>> GetUserOrders(ApplicationUser user)
     {
-        var orders = await orderService.GetUserOrdersAsync(user);
-        return orders;
+        return await orderService.GetUserOrdersAsync(user);
     }
 
     public async Task<ActionResult<List<Order>>> GetPendingOrders(ApplicationUser user)
@@ -129,7 +128,39 @@ public class OrderController(IOrderService orderService, IBusinessService busine
         {
             return NotFound();
         }
-        var entries = await orderEntryService.GetByOrder(orderId);
+        
+        //var entries = await orderEntryService.GetByOrder(orderId);
+        var entries = order.OrderEntries;
         return entries;
+    }
+
+    public async Task<ActionResult<decimal>> CalculatePrice(Guid orderId)
+    {
+        var order = await orderService.GetByIdAsync(orderId);
+        if (order == null)
+        {
+            return NotFound();
+        }
+
+        return await orderService.CalculatePrice(order);
+    }
+
+    public async Task<List<OrderStatus>> GetStatuses()
+    {
+        return await orderService.GetStatusesAsync();
+    }
+
+    public async Task UpdateStatus(Guid orderId, Guid statusId)
+    {
+        var order = await orderService.GetByIdAsync(orderId);
+        if (order == null)
+            return;
+
+        var status = await orderService.GetStatusByNameAsync(statusId.ToString());
+        if (status == null)
+            return;
+
+        order.Status = status;
+        await orderService.UpdateAsync(order);
     }
 }

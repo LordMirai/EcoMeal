@@ -19,7 +19,7 @@ public class OrderEntryRepository(EcoMealDbContext context): IOrderEntryReposito
 
     public async Task UpdateAsync(OrderEntry orderEntry)
     {
-        // todo
+        context.OrderEntries.Update(orderEntry);
     }
 
     public async Task<OrderEntry?> GetByIdAsync(Guid id)
