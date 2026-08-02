@@ -1,5 +1,6 @@
 ﻿using EcoMeal.Entities;
 using EcoMeal.Repositories.Interfaces;
+using EcoMeal.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 
@@ -7,7 +8,7 @@ namespace EcoMeal.Controllers;
 
 [ApiController]
 [Route("/")]
-public class OrderController(IOrderService orderService, IBusinessService businessService, IOrderEntryService orderEntryService) : ControllerBase
+public class OrderController(IOrderService orderService, IBusinessService businessService, IOrderEntryService orderEntryService, IPackageService packageService) : ControllerBase
 {
     public async Task<ActionResult<List<Order>>> GetAll()
     {
@@ -163,5 +164,33 @@ public class OrderController(IOrderService orderService, IBusinessService busine
         Console.WriteLine("Checks complete, writing to database.");
         order.Status = status;
         await orderService.UpdateAsync(order);
+    }
+
+    public async Task<ActionResult<bool>> CheckStockAvailability(Guid orderId)
+    {
+        Order? order = await orderService.GetByIdAsync(orderId);
+        if (order == null)
+        {
+            return NotFound();
+        }
+
+        List<OrderEntry> orderEntries = await orderEntryService.GetByOrder(orderId);
+        foreach (OrderEntry entry in orderEntries)
+        {
+            Package? package = await packageService.GetByIdAsync(entry.Package.Id);
+            if (package == null || package.Quantity < entry.Quantity)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public async Task<ActionResult<bool>> SubtractStockQuantities(Guid orderId)
+    {
+        List<OrderEntry> orderEntries = await orderEntryService.GetByOrder(orderId);
+        bool success = await packageService.UpdatePackageQuantities(orderEntries);
+        return success;
     }
 }

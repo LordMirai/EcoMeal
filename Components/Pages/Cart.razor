@@ -91,10 +91,12 @@
                         <div class="d-flex align-items-center gap-3">
                             @if (order.Business != null)
                             {
-                                <img src="@order.Business.ImageURL"
-                                     class="rounded-2 object-fit-cover shadow-sm"
-                                     style="width: 64px; height: 64px;"
-                                     alt="@order.Business.Name Profile" />
+                                <a href="/catalog/@order.Business.Id" class="text-decoration-none">
+                                    <img src="@order.Business.ImageURL"
+                                         class="rounded-2 object-fit-cover shadow-sm"
+                                         style="width: 64px; height: 64px;"
+                                         alt="@order.Business.Name Profile" />
+                                </a>
                                 <div>
                                     <h5 class="fw-bold text-dark mb-0 fs-6">@order.Business.Name</h5>
                                     <span class="text-muted small">Order Code: <code class="bg-white px-1.5 py-0.5 rounded border">@order.OrderNumber</code></span>
@@ -275,7 +277,7 @@
 
 
             Console.WriteLine($"Calculated order total: {amount}");
-            
+
             var affRes = await WalletController.CanAfford(userWallet.Id, amount);
             var affordable = affRes.Value;
 
@@ -283,6 +285,20 @@
             {
                 Console.WriteLine("Insufficient funds to submit order.");
                 InsufficientFundsError(pendingOrders.FirstOrDefault(o => o.Id == orderId));
+                return;
+            }
+
+            bool stockCheck = (await orderController.CheckStockAvailability(orderId)).Value;
+            if (!stockCheck)
+            {
+                Console.WriteLine("One or more items in the order are out of stock.");
+                return;
+            }
+
+            bool ok = (await orderController.SubtractStockQuantities(orderId)).Value;
+            if (!ok)
+            {
+                Console.WriteLine("Failed to subtract stock quantities for the order.");
                 return;
             }
 

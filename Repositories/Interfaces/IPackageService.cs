@@ -12,4 +12,6 @@ public interface IPackageService
     public Task<List<Package>> GetByBusinessIdAsync(Guid businessId);
     public Task<List<PackageType>> GetTypes();
     public Task DeleteAsync(Guid id);
+    public Task<bool> DecreaseQuantity(Guid id, int quantity);
+    public Task<bool> UpdatePackageQuantities(List<OrderEntry> orderEntries);
 }

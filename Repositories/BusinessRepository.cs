@@ -14,7 +14,6 @@ public class BusinessRepository(EcoMealDbContext context) : IBusinessRepository
         {
             query = query.Where(b => !b.IsDeleted);
         }
-        //return await context.Businesses.Include(b=>b.BusinessType).ToListAsync();
         return await query.Include(b=>b.BusinessType).ToListAsync();
     }
 

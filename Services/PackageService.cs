@@ -60,4 +60,26 @@ public class PackageService(IPackageRepository packageRepository, IPackageTypeRe
     {
         return await packageTypeRepository.GetAllAsync();
     }
+
+    public async Task<bool> DecreaseQuantity(Guid id, int quantity)
+    {
+        var package = await packageRepository.GetByIdAsync(id);
+        if (package is null) return false;
+        if (package.Quantity < quantity)
+            return false;
+        package.Quantity -= quantity;
+        return true;
+    }
+
+    public async Task<bool> UpdatePackageQuantities(List<OrderEntry> orderEntries)
+    {
+        foreach (var entry in orderEntries)
+        {
+            bool result = await DecreaseQuantity(entry.Package.Id, entry.Quantity);
+            if (!result)
+                return false;
+        }
+        await packageRepository.SaveChangesAsync();
+        return true;
+    }
 }
